@@ -1,10 +1,10 @@
-// GenevaCam - consolidated app.js
+// GenevaCam - final consolidated app.js
 // - 30-minute smooth tram ticker on all formats
-// - Songs widget: portrait shows current + 1 previous; scrollable; font sizes increased
-// - Overlay toggle fixed bottom-left (no JS repositioning)
+// - Songs widget: portrait shows current + 1 previous; scrollable (3 total accessible)
+// - Overlay toggle fixed bottom-left (CSS only)
 // - Clock/weather updates, radio toggle, HLS stream handling
-// - Respect prefers-reduced-motion
-// Note: replace existing app.js with this file.
+// - Respects prefers-reduced-motion
+// Replace your existing app.js with this file.
 
 console.log("GenevaCam loaded");
 
@@ -175,7 +175,7 @@ if (radioToggle) {
 }
 
 //
-// News ticker (bottom) - preserved from earlier code
+// News ticker (bottom)
 //
 const ticker = document.getElementById("ticker");
 let feedBatches = [], rotationOffset = 0, cachedForecastText = "", currentAnimation = null;
@@ -433,7 +433,7 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
 
       const now = json.live && json.live[0];
       const isPortrait = window.matchMedia("(max-width: 768px) and (orientation: portrait)").matches;
-      const prevCount = isPortrait ? 1 : 2;
+      const prevCount = isPortrait ? 2 : 2; // portrait shows current + 2 previous accessible by scroll; visible area limited to one row
       const prev = (json.played || []).slice(0, prevCount);
 
       if (!now) throw new Error("No live entry");
