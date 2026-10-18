@@ -165,18 +165,22 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
 /* -------------------------
    PORTRAIT: stacked boxes same width; songs reduced to show 1 row but scroll 3 total
    ------------------------- */
+/* PORTRAIT: make clock + radio same width as song box (replace existing portrait block) */
 @media screen and (max-width: 768px) and (orientation: portrait) {
   :root{
     --panel-top-mobile: 6px;
-    --clock-mobile-height: 160px;
-    --radio-mobile-height: 140px;   /* increased so toggle fits comfortably */
-    --songs-mobile-height: 92px;    /* show ~1 song row visibly */
+    --clock-mobile-height: 160px;   /* clock visible height */
+    --radio-mobile-height: 140px;   /* radio card height (tall enough for toggle) */
+    --songs-mobile-height: 92px;    /* visible height for songs widget (approx 1 row) */
     --gap-mobile: 8px;
     --ticker-height: 50px;
     --tram-ticker-height: 30px;
+
+    /* Change this value to make all boxes wider/narrower on portrait */
+    --mobile-box-width-portrait: 30vw;
   }
 
-  /* all three boxes same width and touch left */
+  /* Clock uses the shared portrait width */
   #clockBox{
     position:fixed;
     top:var(--panel-top-mobile);
@@ -188,6 +192,7 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     z-index:10002;
   }
 
+  /* Stack container uses same outer width so radio + songs align */
   #logoBox{
     position:fixed;
     top: calc(var(--panel-top-mobile) + var(--clock-mobile-height) + var(--gap-mobile));
@@ -199,15 +204,17 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     z-index:10001;
   }
 
+  /* Radio card fills the shared width */
   #logoBox > #logoMain {
     width:100%;
     height:var(--radio-mobile-height);
     margin-bottom:var(--gap-mobile);
-    padding:12px;
+    padding:10px;
     box-sizing:border-box;
     justify-content:center;
   }
 
+  /* Songs widget fills the shared width and keeps scroll */
   #logoBox > #songs-widget {
     width:100%;
     height:var(--songs-mobile-height);
@@ -216,14 +223,19 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     overflow:hidden;
   }
 
-  /* songs list scrollable inside small box (shows 1 row but you can scroll to see up to 3) */
-  #songs-widget .sw-list { height:100%; overflow-y:auto; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+  /* Make only the inner list scrollable (so user can scroll to see up to 3 items) */
+  #songs-widget .sw-list {
+    height:100%;
+    overflow-y:auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
 
-  /* adjust sizes for portrait */
+  /* Portrait size adjustments to keep layout balanced */
   #clock{ font-size:18px; line-height:1.02; }
   #date{ font-size:10px; margin-top:4px; }
   #temperature{ font-size:10px; margin-top:6px; }
-  #weather{ display:block; font-size:10px; margin-top:4px; color:#ffffffcc; }
+  #weather{ font-size:10px; margin-top:4px; color:#ffffffcc; }
 
   #clockBox #fullscreen-btn{ width:22px; height:22px; right:8px; top:8px; border-width:1.2px; }
   #clockBox #fullscreen-btn svg{ width:12px; height:12px; }
@@ -235,6 +247,7 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
   .power-label{ font-size:0.85rem; }
 
   #songs-widget .sw-header{ font-size:14px; margin-bottom:6px; }
+  #songs-widget .sw-row{ gap:10px; min-height:72px; }
   #songs-widget .sw-title{ font-size:16px; }
   #songs-widget .sw-artist{ font-size:13px; }
   #songs-widget img{ width:44px; height:44px; }
