@@ -1,3 +1,14 @@
+/* style.css - updated: enforce equal widths for clock, radio, and songs in portrait,
+   box-sizing normalized, portrait/threaded stacking corrected, scrollable songs list,
+   30-min tram ticker handled in JS.
+*/
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 :root{
   --panel-top: 0px;               /* desktop left column top */
   --panel-height: 360px;         /* shared baseline for bottom alignment (desktop) */
@@ -6,7 +17,7 @@
   --ticker-height: 82px;
   --tram-ticker-height: 68px;
 
-  /* portrait stacked width (tweakable) */
+  /* portrait stacked width (adjustable) */
   --mobile-box-width-portrait: 30vw;
 }
 
@@ -25,7 +36,6 @@ button,input,select,textarea{ font:inherit; }
   padding-right:18px;
   padding-bottom:18px;
   padding-left:0;
-  box-sizing:border-box;
   display:flex;
   flex-direction:row;
   gap:14px;
@@ -39,7 +49,6 @@ button,input,select,textarea{ font:inherit; }
   background:#48bcc7;
   border-radius:8px;
   padding:18px 20px;
-  box-sizing:border-box;
   display:flex;
   flex-direction:column;
   justify-content:space-between;
@@ -68,7 +77,6 @@ button,input,select,textarea{ font:inherit; }
   color:#fff;
   border-radius:8px;
   padding:14px;
-  box-sizing:border-box;
   height:100%;
   display:flex;
   flex-direction:column;
@@ -76,7 +84,7 @@ button,input,select,textarea{ font:inherit; }
   overflow:hidden;
 }
 
-#songs-widget .sw-list{ overflow:auto; height:100%; padding-right:8px; box-sizing:border-box; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
+#songs-widget .sw-list{ overflow:auto; height:100%; padding-right:8px; -webkit-overflow-scrolling: touch; scroll-behavior: smooth; }
 #songs-widget .sw-header{ font-size:19px; font-weight:900; text-transform:uppercase; margin-bottom:10px; color:#fff; }
 #songs-widget .sw-row{ display:flex; align-items:center; gap:12px; margin-bottom:10px; min-height:72px; }
 #songs-widget img{ width:56px; height:56px; border-radius:6px; object-fit:cover; background:rgba(255,255,255,0.15); flex:0 0 56px; }
@@ -128,7 +136,6 @@ button,input,select,textarea{ font:inherit; }
   display:flex;
   align-items:center;
   padding:0 14px;
-  box-sizing:border-box;
   overflow:hidden;
   white-space:nowrap;
   background: rgba(0,0,0,0.08);
@@ -150,7 +157,7 @@ button,input,select,textarea{ font:inherit; }
 #ticker{ position:absolute; left:0; top:0; white-space:nowrap; line-height:var(--ticker-height); color:white; font-size:30px; font-weight:700; padding-left:12px; }
 
 /* Credits & overlay toggle (bottom-left fixed) */
-#credits{ position:fixed; right:12px; bottom: calc(var(--ticker-height) + 6px); max-width:calc(100vw - 140px); box-sizing:border-box; padding:4px 8px; background:rgba(0,0,0,0.45); border-radius:6px; color:rgba(255,255,255,0.85); font-size:11px; line-height:1.25; text-align:right; z-index:9999; }
+#credits{ position:fixed; right:12px; bottom: calc(var(--ticker-height) + 6px); max-width:calc(100vw - 140px); padding:4px 8px; background:rgba(0,0,0,0.45); border-radius:6px; color:rgba(255,255,255,0.85); font-size:11px; line-height:1.25; text-align:right; z-index:9999; }
 #overlay-toggle{ position:fixed; left:8px; bottom: calc(var(--ticker-height) + 6px); padding:6px 10px; border:1px solid rgba(255,255,255,0.85); border-radius:6px; background:rgba(0,0,0,0.6); color:#fff; z-index:10012; }
 
 /* Hide overlays when masked */
@@ -165,7 +172,6 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
 /* -------------------------
    PORTRAIT: stacked boxes same width; songs reduced to show 1 row but scroll 3 total
    ------------------------- */
-/* PORTRAIT: make clock + radio same width as song box (replace existing portrait block) */
 @media screen and (max-width: 768px) and (orientation: portrait) {
   :root{
     --panel-top-mobile: 6px;
@@ -180,7 +186,8 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     --mobile-box-width-portrait: 30vw;
   }
 
-  /* Clock uses the shared portrait width */
+  /* Make the shared width exact and ensure box-sizing includes padding so widths visually match */
+  /* Apply the shared width to the outer containers and force children to fill 100% */
   #clockBox{
     position:fixed;
     top:var(--panel-top-mobile);
@@ -192,38 +199,40 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     z-index:10002;
   }
 
-  /* Stack container uses same outer width so radio + songs align */
   #logoBox{
     position:fixed;
     top: calc(var(--panel-top-mobile) + var(--clock-mobile-height) + var(--gap-mobile));
     left:0;
     width:var(--mobile-box-width-portrait);
+    /* height is the sum of the radio + songs visible heights + gap */
     height: calc(var(--radio-mobile-height) + var(--songs-mobile-height) + var(--gap-mobile));
     padding:0;
     display:block;
     z-index:10001;
   }
 
-  /* Radio card fills the shared width */
+  /* Force the radio card to fill the shared width exactly */
   #logoBox > #logoMain {
     width:100%;
+    max-width:100%;
     height:var(--radio-mobile-height);
     margin-bottom:var(--gap-mobile);
     padding:10px;
-    box-sizing:border-box;
+    display:flex;
+    align-items:center;
     justify-content:center;
   }
 
-  /* Songs widget fills the shared width and keeps scroll */
+  /* Force the songs widget to fill the shared width exactly and keep inner scroll */
   #logoBox > #songs-widget {
     width:100%;
+    max-width:100%;
     height:var(--songs-mobile-height);
     padding:8px;
-    box-sizing:border-box;
     overflow:hidden;
   }
 
-  /* Make only the inner list scrollable (so user can scroll to see up to 3 items) */
+  /* Inner list scrolls inside the constrained songs box */
   #songs-widget .sw-list {
     height:100%;
     overflow-y:auto;
@@ -231,7 +240,7 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     scroll-behavior: smooth;
   }
 
-  /* Portrait size adjustments to keep layout balanced */
+  /* portrait-specific adjustments */
   #clock{ font-size:18px; line-height:1.02; }
   #date{ font-size:10px; margin-top:4px; }
   #temperature{ font-size:10px; margin-top:6px; }
