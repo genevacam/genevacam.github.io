@@ -1,8 +1,8 @@
 /* style.css - full file
    Includes:
    - desktop layout, weather, ticker, radio, songs
-   - portrait mobile: equal widths for clock + radio + songs
-   - landscape mobile adjustments
+   - portrait mobile: equal widths + +30% width increase
+   - landscape mobile: aligned tops/bottoms
    - fixed bottom-left toggle
    - 30-minute smooth tram ticker
 */
@@ -21,8 +21,8 @@
   --ticker-height: 82px;
   --tram-ticker-height: 68px;
 
-  /* mobile portrait stacked width */
-  --mobile-box-width-portrait: 30vw;
+  /* portrait mobile width */
+  --mobile-box-width-portrait: 39vw;
 }
 
 /* Reset */
@@ -184,7 +184,7 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     --gap-mobile: 8px;
     --ticker-height: 50px;
     --tram-ticker-height: 30px;
-    --mobile-box-width-portrait: 30vw;
+    --mobile-box-width-portrait: 39vw;
   }
 
   #clockBox,
@@ -290,23 +290,36 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     gap:10px;
     display:flex;
     flex-direction:row;
-    align-items:flex-start;
+    align-items:stretch;
     z-index:10000;
   }
 
-  #logoMain{ flex:0 0 110px; padding:10px; height:100%; border-radius:8px; display:flex; flex-direction:column; justify-content:center; }
-  #logo{ width:86px; margin-top:0; }
-  #radio-tagline{ font-size:11px; transform:translateY(0); }
+  #logoMain,
+  #songs-widget,
+  #clockBox{
+    height:100%;
+    align-self:stretch;
+  }
+
+  #logoMain{
+    flex:0 0 110px;
+    padding:10px;
+    border-radius:8px;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+  }
 
   #songs-widget{
     padding:8px;
     min-width:120px;
     max-width:27.2vw;
-    height:100%;
     border-radius:8px;
     overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-start;
   }
-  #songs-widget .sw-header{ font-size:11px; } #songs-widget .sw-title{ font-size:11px; } #songs-widget .sw-artist{ font-size:10px; } #songs-widget img{ width:28px; height:28px; }
 
   #clockBox{
     top:var(--panel-top-mobile-land);
@@ -318,12 +331,17 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     z-index:10002;
   }
 
-  #clockBox #fullscreen-btn{ width:32px; height:32px; right:8px; top:8px; border-width:1.2px; }
-  #clockBox #fullscreen-btn svg{ width:14px; height:14px; }
-  #logoMain .power-btn{ width:40px; height:40px; border-width:2px; }
-  #logoMain .power-icon{ width:20px; height:20px; }
+  #logo{ width:86px; margin-top:0; }
+  #radio-tagline{ font-size:11px; transform:translateY(0); }
 
-  #clock{ font-size:18px; } #date{ font-size:11px; } #temperature,#weather{ font-size:11px; }
+  #songs-widget .sw-header{ font-size:11px; }
+  #songs-widget .sw-title{ font-size:11px; }
+  #songs-widget .sw-artist{ font-size:10px; }
+  #songs-widget img{ width:28px; height:28px; }
+
+  #clock{ font-size:18px; }
+  #date{ font-size:11px; }
+  #temperature,#weather{ font-size:11px; }
   #clockBox > #tram-ticker{ height:var(--tram-ticker-height); font-size:14px; }
 
   #tickerContainer{ height:var(--ticker-height); }

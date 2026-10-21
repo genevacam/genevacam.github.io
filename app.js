@@ -1,10 +1,12 @@
 // GenevaCam app.js
 // Updated:
+// - news ticker intro text: "Geneva Cam: Bienvenue ..."
+// - TPG/CFF wording updated
 // - forecast wording fixed to "Prévisions pour Genève :"
-// - TPG/CFF strings updated
-// - tram ticker speed: desktop kept faster, mobile reduced by 50%
-// - portrait mobile width rules corrected for clock + radio to match songs width
-// - smoother 30-minute tram logic retained
+// - desktop tram speed increased by 50%
+// - mobile portrait + mobile landscape tram speed reduced by 50%
+// - portrait mobile widths increased by 30%
+// - mobile landscape boxes aligned top/bottom
 
 console.log("GenevaCam loaded");
 
@@ -278,13 +280,13 @@ async function updateTicker() {
 
   feedBatches = [];
 
-feedBatches.push({
-  name: "Geneva Cam",
-  titles: [
-    "Bienvenue sur Geneva Cam 😃 Bonne écoute de Radio Lac, le meilleur de la musique 🎵",
-    "Actualités en direct de Genève, de Suisse et du monde, ainsi que les dernières informations sur l'économie, le sport, la météo et les transports publics à Genève"
-  ]
-});
+  feedBatches.push({
+    name: "Geneva Cam",
+    titles: [
+      "Bienvenue sur Geneva Cam 😃 Bonne écoute de Radio Lac, le meilleur de la musique 🎵",
+      "Actualités en direct de Genève, de Suisse et du monde, ainsi que les dernières informations sur l'économie, le sport, la météo et les transports publics à Genève"
+    ]
+  });
 
   if (tpgResults && tpgResults.length > 0) {
     feedBatches.push({ name: "Transports publics à Genève", titles: tpgResults });
@@ -402,10 +404,10 @@ const SONGS_URL = "https://www.radiolac.ch/cache/lac.json";
 const SONGS_REFRESH_MS = 30000;
 const GRANGE_CANAL_STOP_ID = "8592833";
 
-// Desktop speed = increased by 50%
+// Desktop: increased by 50%
 const DESKTOP_DEPARTURES_TICKER_SPEED = 92.0 * 1.15 * 1.5;
 
-// Mobile speed = desktop speed * 50% reduction
+// Mobile portrait + mobile landscape: slower by 50%
 const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
 (function createSongsWidget() {
@@ -454,8 +456,8 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
       const isMobile = window.matchMedia("(max-width: 768px)").matches;
       const currentSpeed = isMobile ? MOBILE_DEPARTURES_TICKER_SPEED : DESKTOP_DEPARTURES_TICKER_SPEED;
-
       const duration = Math.max(4000, Math.round((copyWidth / currentSpeed) * 1000));
+
       tramAnimation = tramTrack.animate(
         [
           { transform: "translateX(0px)" },
@@ -651,9 +653,6 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
     const hidden = document.body.classList.toggle("boxes-hidden");
     button.textContent = hidden ? "Afficher" : "Masquer";
     button.setAttribute("aria-expanded", String(!hidden));
-    button.setAttribute(
-      "aria-label",
-      hidden ? "Afficher les panneaux d'information" : "Masquer les panneaux d'information"
-    );
+    button.setAttribute("aria-label", hidden ? "Afficher les panneaux d'information" : "Masquer les panneaux d'information");
   });
 })();
