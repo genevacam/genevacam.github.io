@@ -1,11 +1,11 @@
 /* style.css - full file
    Includes:
    - desktop layout, weather, ticker, radio, songs
-   - portrait mobile: width increased by 20%
+   - portrait mobile: equal widths + 20% increase
    - landscape mobile: aligned tops/bottoms
-   - fixed bottom-left toggle
-   - 30-minute smooth tram ticker
+   - fullscreen toggle moved down in landscape
    - credits forced to white
+   - smooth repeating tram ticker
 */
 
 *,
@@ -22,7 +22,7 @@
   --ticker-height: 82px;
   --tram-ticker-height: 68px;
 
-  /* portrait mobile width 20% larger than prior 39vw */
+  /* portrait mobile width increased by 20% from 39vw */
   --mobile-box-width-portrait: 46.8vw;
 }
 
@@ -350,8 +350,8 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     z-index:10002;
   }
 
-  #clockBox #fullscreen-btn{
-    top: 10px;
+  #fullscreen-btn{
+    top: 32px;
     right: 8px;
   }
 

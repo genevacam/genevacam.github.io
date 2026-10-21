@@ -1,14 +1,13 @@
 // GenevaCam app.js
 // Updated:
-// - news ticker intro text: "Geneva Cam: Bienvenue ..."
+// - news ticker intro text fixed
 // - TPG/CFF wording updated
 // - forecast wording fixed to "Prévisions pour Genève :"
 // - desktop tram speed increased by 50%
 // - mobile portrait + landscape tram speed reduced by 50%
-// - portrait mobile widths increased by 20%
-// - credits set to white
+// - mobile landscape fullscreen button moved lower
+// - tram ticker fixed to loop smoothly without speeding up / snapping
 // - 30-minute tram logic retained, with fallback to next future tram if no departures exist in the next 30 minutes
-// - fixed animation bug where repeated text caused the ticker to accelerate and snap badly on repeat
 
 console.log("GenevaCam loaded");
 
@@ -435,16 +434,16 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
   };
 
   const renderTramTicker = (text) => {
-    // Always restart the animation cleanly so it does not get faster by stacking loops
+    if (!text) return;
+
+    // Always cancel previous animation so it doesn't accelerate as loops continue.
     if (tramAnimation) {
       try { tramAnimation.cancel(); } catch (e) {}
       tramAnimation = null;
     }
 
-    tramTrack.style.transform = "translateX(0)";
     lastDepartureText = text;
-    const loopText = text + "   •   ";
-    tramTrack.textContent = loopText + loopText;
+    tramTrack.textContent = text + "   •   " + text + "   •   " + text;
     placeTramTicker();
 
     const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -454,17 +453,19 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
     }
 
     requestAnimationFrame(() => {
-      const copyWidth = tramTrack.getBoundingClientRect().width / 2;
-      if (!copyWidth) return;
+      const totalWidth = tramTrack.scrollWidth;
+      const loopWidth = totalWidth / 3;
+      const isMobileLandscape = window.matchMedia("(max-height: 500px) and (orientation: landscape)").matches;
+      const isMobilePortrait = window.matchMedia("(max-width: 768px) and (orientation: portrait)").matches;
+      const isMobile = isMobilePortrait || isMobileLandscape;
 
-      const isMobile = window.matchMedia("(max-width: 768px)").matches;
       const currentSpeed = isMobile ? MOBILE_DEPARTURES_TICKER_SPEED : DESKTOP_DEPARTURES_TICKER_SPEED;
-      const duration = Math.max(4000, Math.round((copyWidth / currentSpeed) * 1000));
+      const duration = Math.max(5000, Math.round((loopWidth / currentSpeed) * 1000));
 
       tramAnimation = tramTrack.animate(
         [
           { transform: "translateX(0px)" },
-          { transform: `translateX(-${copyWidth}px)` }
+          { transform: `translateX(-${loopWidth}px)` }
         ],
         {
           duration,
