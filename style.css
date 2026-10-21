@@ -1,8 +1,10 @@
-/* style.css - Updated to ensure clock, radio and songs boxes have identical widths in mobile portrait.
-   - Global box-sizing applied
-   - Portrait rules enforce exact same outer width for #clockBox, #logoBox, #logoMain and #songs-widget
-   - Songs list remains scrollable inside constrained height
-   - Other layout and responsive rules preserved
+/* style.css - full file
+   Includes:
+   - desktop layout, weather, ticker, radio, songs
+   - portrait mobile: equal widths for clock + radio + songs
+   - landscape mobile adjustments
+   - fixed bottom-left toggle
+   - 30-minute smooth tram ticker
 */
 
 *,
@@ -19,7 +21,7 @@
   --ticker-height: 82px;
   --tram-ticker-height: 68px;
 
-  /* portrait stacked width - adjust this to widen/narrow all three boxes on portrait */
+  /* mobile portrait stacked width */
   --mobile-box-width-portrait: 30vw;
 }
 
@@ -70,7 +72,7 @@ button,input,select,textarea{ font:inherit; }
 .power-icon{ width:28px; height:28px; fill:#fff; }
 .power-label{ font-size:1rem; font-weight:800; color:#fff; text-transform:uppercase; margin-top:0.4rem; }
 
-/* SONGS widget - default desktop behavior */
+/* SONGS widget */
 #songs-widget{
   flex:1 1 auto;
   min-width:160px;
@@ -171,7 +173,7 @@ body.boxes-hidden #credits {
 body.boxes-hidden #overlay-toggle { z-index:10013; }
 
 /* -------------------------
-   PORTRAIT: stacked boxes same outer width; songs reduced to show ~1 row but scroll 3 total
+   PORTRAIT: stacked boxes same width
    ------------------------- */
 @media screen and (max-width: 768px) and (orientation: portrait) {
   :root{
@@ -185,8 +187,6 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     --mobile-box-width-portrait: 30vw;
   }
 
-  /* IMPORTANT: enforce identical outer width for all three boxes.
-     Use the same variable for outer container widths. Padding is inside box-sizing, so visual outer widths match. */
   #clockBox{
     position:fixed;
     top:var(--panel-top-mobile);
@@ -198,8 +198,6 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     z-index:10002;
   }
 
-  /* Make the left stack wrapper match the same outer width.
-     We'll make its children (#logoMain and #songs-widget) fill 100% of that width. */
   #logoBox{
     position:fixed;
     top: calc(var(--panel-top-mobile) + var(--clock-mobile-height) + var(--gap-mobile));
@@ -211,30 +209,28 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     z-index:10001;
   }
 
-  /* Force radio card to match the shared width exactly */
   #logoBox > #logoMain {
     width:100%;
     max-width:100%;
     height:var(--radio-mobile-height);
     margin-bottom:var(--gap-mobile);
     padding:10px;
-    border-radius:8px;
+    box-sizing:border-box;
     display:flex;
     align-items:center;
     justify-content:center;
   }
 
-  /* Force songs widget to match the shared width exactly */
   #logoBox > #songs-widget {
     width:100%;
     max-width:100%;
     height:var(--songs-mobile-height);
     padding:8px;
+    box-sizing:border-box;
     overflow:hidden;
     border-radius:8px;
   }
 
-  /* The inner list scrolls inside the smaller songs box */
   #songs-widget .sw-list {
     height:100%;
     overflow-y:auto;
@@ -242,7 +238,6 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     scroll-behavior: smooth;
   }
 
-  /* Portrait-specific adjustments */
   #clock{ font-size:18px; line-height:1.02; }
   #date{ font-size:10px; margin-top:4px; }
   #temperature{ font-size:10px; margin-top:6px; }
@@ -299,10 +294,25 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
   #logo{ width:86px; margin-top:0; }
   #radio-tagline{ font-size:11px; transform:translateY(0); }
 
-  #songs-widget{ padding:8px; min-width:120px; max-width:27.2vw; height:100%; border-radius:8px; overflow:hidden; }
+  #songs-widget{
+    padding:8px;
+    min-width:120px;
+    max-width:27.2vw;
+    height:100%;
+    border-radius:8px;
+    overflow:hidden;
+  }
   #songs-widget .sw-header{ font-size:11px; } #songs-widget .sw-title{ font-size:11px; } #songs-widget .sw-artist{ font-size:10px; } #songs-widget img{ width:28px; height:28px; }
 
-  #clockBox{ top:var(--panel-top-mobile-land); right:6px; height:var(--panel-height-land); width:220px; padding:8px 8px calc(8px + var(--tram-ticker-height) + 6px); border-radius:8px; z-index:10002; }
+  #clockBox{
+    top:var(--panel-top-mobile-land);
+    right:6px;
+    height:var(--panel-height-land);
+    width:220px;
+    padding:8px 8px calc(8px + var(--tram-ticker-height) + 6px);
+    border-radius:8px;
+    z-index:10002;
+  }
 
   #clockBox #fullscreen-btn{ width:32px; height:32px; right:8px; top:8px; border-width:1.2px; }
   #clockBox #fullscreen-btn svg{ width:14px; height:14px; }

@@ -1,9 +1,10 @@
 // GenevaCam app.js
 // Updated:
-// - tram ticker speed increased by 50%
-// - feed naming uses real labels instead of Le Temps 0 / 20 Minutes 0
-// - 30-minute tram logic remains in place
-// - mobile and desktop layout behaviors retained
+// - forecast wording fixed to "Prévisions pour Genève :"
+// - TPG/CFF strings updated
+// - tram ticker speed: desktop kept faster, mobile reduced by 50%
+// - portrait mobile width rules corrected for clock + radio to match songs width
+// - smoother 30-minute tram logic retained
 
 console.log("GenevaCam loaded");
 
@@ -53,7 +54,7 @@ function isFullscreen() {
 })();
 
 //
-// Video stream (HLS)
+// Webcam stream (HLS)
 //
 const video = document.getElementById("video");
 const STREAM_URL = "https://edge16.vedge.infomaniak.com/livecast/ik:sig2/chunklist_w1380254353.m3u8";
@@ -238,7 +239,7 @@ async function fetchTpgAlerts() {
       }
     }
   } catch (e) {}
-  return ["Transports publics genevois (TPG) : Genève-Cornavin- Service régulier et fluide sur le réseau"];
+  return ["TPG / CFF : Genève-Cornavin - Service régulier et fluide sur le réseau"];
 }
 
 async function getForecast() {
@@ -256,7 +257,7 @@ async function getForecast() {
       const desc = describeWeatherFr(d.weather_code[i]);
       return label + ' : ' + (desc ? desc + ', ' : '') + Math.round(d.temperature_2m_min[i]) + ' à ' + Math.round(d.temperature_2m_max[i]) + ' °C';
     });
-    return ('Prévisions pour Genève : ' + parts.join('   |   ')).replace(/Genève/g, 'Geneva');
+    return 'Prévisions pour Genève : ' + parts.join('   |   ');
   } catch (e) {
     console.warn('Forecast fetch error:', e);
     return null;
@@ -399,8 +400,12 @@ setInterval(updateTicker, 600000);
 const SONGS_URL = "https://www.radiolac.ch/cache/lac.json";
 const SONGS_REFRESH_MS = 30000;
 const GRANGE_CANAL_STOP_ID = "8592833";
-// 50% faster than prior tram speed
-const DEPARTURES_TICKER_SPEED = 92.0 * 1.15 * 1.5;
+
+// Desktop speed = increased by 50%
+const DESKTOP_DEPARTURES_TICKER_SPEED = 92.0 * 1.15 * 1.5;
+
+// Mobile speed = desktop speed * 50% reduction
+const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
 (function createSongsWidget() {
   const logoBox = document.getElementById("logoBox");
@@ -445,7 +450,11 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15 * 1.5;
     requestAnimationFrame(() => {
       const copyWidth = tramTrack.getBoundingClientRect().width / 2;
       if (!copyWidth) return;
-      const duration = Math.max(4000, Math.round((copyWidth / DEPARTURES_TICKER_SPEED) * 1000));
+
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      const currentSpeed = isMobile ? MOBILE_DEPARTURES_TICKER_SPEED : DESKTOP_DEPARTURES_TICKER_SPEED;
+
+      const duration = Math.max(4000, Math.round((copyWidth / currentSpeed) * 1000));
       tramAnimation = tramTrack.animate(
         [
           { transform: "translateX(0px)" },
@@ -641,6 +650,9 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15 * 1.5;
     const hidden = document.body.classList.toggle("boxes-hidden");
     button.textContent = hidden ? "Afficher" : "Masquer";
     button.setAttribute("aria-expanded", String(!hidden));
-    button.setAttribute("aria-label", hidden ? "Afficher les panneaux d'information" : "Masquer les panneaux d'information");
+    button.setAttribute(
+      "aria-label",
+      hidden ? "Afficher les panneaux d'information" : "Masquer les panneaux d'information"
+    );
   });
 })();
