@@ -173,7 +173,7 @@ body.boxes-hidden #credits {
 body.boxes-hidden #overlay-toggle { z-index:10013; }
 
 /* -------------------------
-   PORTRAIT: stacked boxes same width
+   PORTRAIT MOBILE
    ------------------------- */
 @media screen and (max-width: 768px) and (orientation: portrait) {
   :root{
@@ -187,11 +187,19 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     --mobile-box-width-portrait: 30vw;
   }
 
+  #clockBox,
+  #logoBox,
+  #logoBox > #logoMain,
+  #logoBox > #songs-widget {
+    width: var(--mobile-box-width-portrait) !important;
+    max-width: var(--mobile-box-width-portrait) !important;
+    min-width: var(--mobile-box-width-portrait) !important;
+  }
+
   #clockBox{
     position:fixed;
     top:var(--panel-top-mobile);
     left:0;
-    width:var(--mobile-box-width-portrait);
     height:var(--clock-mobile-height);
     padding:8px;
     border-radius:8px;
@@ -202,16 +210,13 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     position:fixed;
     top: calc(var(--panel-top-mobile) + var(--clock-mobile-height) + var(--gap-mobile));
     left:0;
-    width:var(--mobile-box-width-portrait);
     height: calc(var(--radio-mobile-height) + var(--songs-mobile-height) + var(--gap-mobile));
     padding:0;
     display:block;
     z-index:10001;
   }
 
-  #logoBox > #logoMain {
-    width:100%;
-    max-width:100%;
+  #logoBox > #logoMain{
     height:var(--radio-mobile-height);
     margin-bottom:var(--gap-mobile);
     padding:10px;
@@ -219,11 +224,10 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     display:flex;
     align-items:center;
     justify-content:center;
+    border-radius:8px;
   }
 
-  #logoBox > #songs-widget {
-    width:100%;
-    max-width:100%;
+  #logoBox > #songs-widget{
     height:var(--songs-mobile-height);
     padding:8px;
     box-sizing:border-box;
@@ -231,7 +235,7 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     border-radius:8px;
   }
 
-  #songs-widget .sw-list {
+  #songs-widget .sw-list{
     height:100%;
     overflow-y:auto;
     -webkit-overflow-scrolling: touch;

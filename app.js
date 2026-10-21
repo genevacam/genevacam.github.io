@@ -278,12 +278,13 @@ async function updateTicker() {
 
   feedBatches = [];
 
-  feedBatches.push({
-    name: "Geneva Cam",
-    titles: [
-      "Bienvenue sur Geneva Cam 😃 Bonne écoute de Radio Lac, le meilleur de la musique 🎵"
-    ]
-  });
+feedBatches.push({
+  name: "Geneva Cam",
+  titles: [
+    "Bienvenue sur Geneva Cam 😃 Bonne écoute de Radio Lac, le meilleur de la musique 🎵",
+    "Actualités en direct de Genève, de Suisse et du monde, ainsi que les dernières informations sur l'économie, le sport, la météo et les transports publics à Genève"
+  ]
+});
 
   if (tpgResults && tpgResults.length > 0) {
     feedBatches.push({ name: "Transports publics à Genève", titles: tpgResults });
