@@ -4,9 +4,10 @@
 // - TPG/CFF wording updated
 // - forecast wording fixed to "Prévisions pour Genève :"
 // - desktop tram speed increased by 50%
-// - mobile portrait + mobile landscape tram speed reduced by 50%
-// - portrait mobile widths increased by 30%
-// - mobile landscape boxes aligned top/bottom
+// - mobile portrait + landscape tram speed reduced by 50%
+// - portrait mobile widths increased by 20%
+// - credits set to white
+// - 30-minute tram logic retained, with fallback to next future tram if no departures exist in the next 30 minutes
 
 console.log("GenevaCam loaded");
 
@@ -407,7 +408,7 @@ const GRANGE_CANAL_STOP_ID = "8592833";
 // Desktop: increased by 50%
 const DESKTOP_DEPARTURES_TICKER_SPEED = 92.0 * 1.15 * 1.5;
 
-// Mobile portrait + mobile landscape: slower by 50%
+// Mobile portrait + landscape: reduced by 50%
 const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
 (function createSongsWidget() {
@@ -503,12 +504,10 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
       const inNext30Minutes = tramEntries.filter(row => row.timestamp <= endWindow);
 
+      // If no departures in the next 30 minutes, use the first future tram as the start of a new 30-minute window
       if (inNext30Minutes.length === 0 && tramEntries.length > 0) {
         startWindow = tramEntries[0].timestamp;
         endWindow = startWindow + 30 * 60 * 1000;
-      } else {
-        startWindow = now;
-        endWindow = now + 30 * 60 * 1000;
       }
 
       const matches = tramEntries.filter(row => row.timestamp >= startWindow && row.timestamp <= endWindow);

@@ -1,10 +1,11 @@
 /* style.css - full file
    Includes:
    - desktop layout, weather, ticker, radio, songs
-   - portrait mobile: equal widths + +30% width increase
+   - portrait mobile: equal widths + +20% increase (39vw -> 46.8vw)
    - landscape mobile: aligned tops/bottoms
    - fixed bottom-left toggle
    - 30-minute smooth tram ticker
+   - credits forced to white
 */
 
 *,
@@ -21,8 +22,8 @@
   --ticker-height: 82px;
   --tram-ticker-height: 68px;
 
-  /* portrait mobile width */
-  --mobile-box-width-portrait: 39vw;
+  /* portrait mobile width increased by 20% from 39vw => 46.8vw */
+  --mobile-box-width-portrait: 46.8vw;
 }
 
 /* Reset */
@@ -159,8 +160,26 @@ button,input,select,textarea{ font:inherit; }
 #tickerContainer{ position:fixed; left:0; bottom:0; width:100vw; height:var(--ticker-height); overflow:hidden; background:rgba(0,0,0,0.70); z-index:9999; }
 #ticker{ position:absolute; left:0; top:0; white-space:nowrap; line-height:var(--ticker-height); color:white; font-size:30px; font-weight:700; padding-left:12px; }
 
-/* Credits & overlay toggle (bottom-left fixed) */
-#credits{ position:fixed; right:12px; bottom: calc(var(--ticker-height) + 6px); max-width:calc(100vw - 140px); padding:4px 8px; background:rgba(0,0,0,0.45); border-radius:6px; color:rgba(255,255,255,0.85); font-size:11px; line-height:1.25; text-align:right; z-index:9999; }
+/* Credits: force white text */
+#credits{
+  position:fixed;
+  right:12px;
+  bottom: calc(var(--ticker-height) + 6px);
+  max-width:calc(100vw - 140px);
+  padding:4px 8px;
+  background:rgba(0,0,0,0.45);
+  border-radius:6px;
+  color:#fff !important;
+  font-size:11px;
+  line-height:1.25;
+  text-align:right;
+  z-index:9999;
+}
+#credits a,
+#credits * {
+  color:#fff !important;
+  text-decoration:none !important;
+}
 #overlay-toggle{ position:fixed; left:8px; bottom: calc(var(--ticker-height) + 6px); padding:6px 10px; border:1px solid rgba(255,255,255,0.85); border-radius:6px; background:rgba(0,0,0,0.6); color:#fff; z-index:10012; }
 
 /* Hide overlays when masked */
@@ -184,7 +203,7 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     --gap-mobile: 8px;
     --ticker-height: 50px;
     --tram-ticker-height: 30px;
-    --mobile-box-width-portrait: 39vw;
+    --mobile-box-width-portrait: 46.8vw;
   }
 
   #clockBox,
