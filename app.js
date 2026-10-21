@@ -3,10 +3,10 @@
 // - news ticker intro text fixed
 // - TPG/CFF wording updated
 // - forecast wording fixed to "Prévisions pour Genève :"
-// - desktop tram speed increased by 50%
-// - mobile portrait + landscape tram speed reduced by 50%
-// - mobile landscape fullscreen button moved lower
-// - tram ticker fixed to loop smoothly without speeding up / snapping
+// - desktop tram ticker speed increased by 50%
+// - mobile portrait + mobile landscape tram speed reduced by 50%
+// - mobile landscape fullscreen toggle moved down by its own height
+// - tram ticker loop made smooth and continuous
 // - 30-minute tram logic retained, with fallback to next future tram if no departures exist in the next 30 minutes
 
 console.log("GenevaCam loaded");
@@ -436,13 +436,14 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
   const renderTramTicker = (text) => {
     if (!text) return;
 
-    // Always cancel previous animation so it doesn't accelerate as loops continue.
     if (tramAnimation) {
       try { tramAnimation.cancel(); } catch (e) {}
       tramAnimation = null;
     }
 
     lastDepartureText = text;
+
+    // Use triple copy so the loop can move smoothly from end back to start without a visible snap.
     tramTrack.textContent = text + "   •   " + text + "   •   " + text;
     placeTramTicker();
 
@@ -453,19 +454,18 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
     }
 
     requestAnimationFrame(() => {
-      const totalWidth = tramTrack.scrollWidth;
-      const loopWidth = totalWidth / 3;
-      const isMobileLandscape = window.matchMedia("(max-height: 500px) and (orientation: landscape)").matches;
+      const sectionWidth = tramTrack.scrollWidth / 3;
       const isMobilePortrait = window.matchMedia("(max-width: 768px) and (orientation: portrait)").matches;
+      const isMobileLandscape = window.matchMedia("(max-height: 500px) and (orientation: landscape)").matches;
       const isMobile = isMobilePortrait || isMobileLandscape;
 
       const currentSpeed = isMobile ? MOBILE_DEPARTURES_TICKER_SPEED : DESKTOP_DEPARTURES_TICKER_SPEED;
-      const duration = Math.max(5000, Math.round((loopWidth / currentSpeed) * 1000));
+      const duration = Math.max(5000, Math.round((sectionWidth / currentSpeed) * 1000));
 
       tramAnimation = tramTrack.animate(
         [
           { transform: "translateX(0px)" },
-          { transform: `translateX(-${loopWidth}px)` }
+          { transform: `translateX(-${sectionWidth}px)` }
         ],
         {
           duration,
