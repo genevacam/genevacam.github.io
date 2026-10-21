@@ -1,10 +1,13 @@
-// GenevaCam - final consolidated app.js
-// - 30-minute smooth tram ticker on all formats
-// - Songs widget: portrait shows current + 1 previous; scrollable (3 total accessible)
-// - Overlay toggle fixed bottom-left (CSS only)
-// - Clock/weather updates, radio toggle, HLS stream handling
-// - Respects prefers-reduced-motion
-// Replace your existing app.js with this file.
+// GenevaCam - final app.js
+// Includes:
+// - live stream
+// - clock + weather
+// - radio toggle
+// - bottom ticker
+// - songs widget
+// - tram ticker with updated 30-minute logic
+// - UI toggle fixed bottom-left
+// - portrait/landscape adjustments from earlier iterations
 
 console.log("GenevaCam loaded");
 
@@ -17,9 +20,11 @@ const proxied = (url) => `${PROXY_BASE}?url=${encodeURIComponent(url)}`;
 function isFullscreen() {
   return !!(document.fullscreenElement || document.webkitFullscreenElement);
 }
+
 (function setupFullscreen() {
   const btn = document.getElementById("fullscreen-btn");
   if (!btn) return;
+
   const root = document.documentElement;
   const canFullscreen = document.fullscreenEnabled || document.webkitFullscreenEnabled;
   if (!canFullscreen) { btn.hidden = true; return; }
@@ -52,7 +57,7 @@ function isFullscreen() {
 })();
 
 //
-// Video stream (HLS)
+// Webcam stream (HLS)
 //
 const video = document.getElementById("video");
 const STREAM_URL = "https://edge16.vedge.infomaniak.com/livecast/ik:sig2/chunklist_w1380254353.m3u8";
@@ -105,7 +110,7 @@ setInterval(() => {
 }, 30000);
 
 //
-// Clock & Weather
+// Clock + Weather
 //
 function describeWeatherFr(code) {
   if (code === 0) return "Ciel dégagé";
@@ -126,6 +131,21 @@ function describeWeatherFr(code) {
   return "";
 }
 
+function updateClock() {
+  const now = new Date();
+  const t = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Zurich" });
+  const clockEl = document.getElementById("clock");
+  if (clockEl) clockEl.textContent = t + " • Genève";
+
+  const parts = new Intl.DateTimeFormat("fr-FR", { weekday:"long", day:"numeric", month:"long", timeZone:"Europe/Zurich" })
+    .formatToParts(now)
+    .map(part => (part.type === "weekday" || part.type === "month") ? part.value.charAt(0).toUpperCase() + part.value.slice(1) : part.value)
+    .join("");
+
+  const dateEl = document.getElementById("date");
+  if (dateEl) dateEl.textContent = parts;
+}
+
 async function updateWeather() {
   try {
     const response = await fetch("https://api.open-meteo.com/v1/forecast?latitude=46.2044&longitude=6.1432&current=temperature_2m,weather_code,wind_speed_10m&timezone=Europe/Zurich");
@@ -142,19 +162,9 @@ async function updateWeather() {
   }
 }
 
-function updateClock() {
-  const now = new Date();
-  const t = now.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Europe/Zurich" });
-  const clockEl = document.getElementById("clock");
-  if (clockEl) clockEl.textContent = t + " • Genève";
-  const parts = new Intl.DateTimeFormat("fr-FR", { weekday:"long", day:"numeric", month:"long", timeZone:"Europe/Zurich" })
-    .formatToParts(now).map(part => (part.type === "weekday" || part.type === "month") ? part.value.charAt(0).toUpperCase()+part.value.slice(1) : part.value).join("");
-  const dateEl = document.getElementById("date");
-  if (dateEl) dateEl.textContent = parts;
-}
-
 updateClock();
 setInterval(updateClock, 1000);
+
 updateWeather();
 setInterval(updateWeather, 600000);
 
@@ -167,18 +177,24 @@ if (radioToggle) {
   radioToggle.addEventListener("click", () => {
     if (!radio) return;
     if (radio.paused) {
-      radio.play().then(()=> radioToggle.classList.add("active")).catch(err=>console.warn(err));
+      radio.play()
+        .then(() => radioToggle.classList.add("active"))
+        .catch(err => console.warn("Radio playback error:", err));
     } else {
-      radio.pause(); radioToggle.classList.remove("active");
+      radio.pause();
+      radioToggle.classList.remove("active");
     }
   });
 }
 
 //
-// News ticker (bottom)
+// Bottom news ticker
 //
 const ticker = document.getElementById("ticker");
-let feedBatches = [], rotationOffset = 0, cachedForecastText = "", currentAnimation = null;
+let feedBatches = [];
+let rotationOffset = 0;
+let cachedForecastText = "";
+let currentAnimation = null;
 const NEWS_TICKER_DURATION_MULTIPLIER = 0.85;
 
 async function fetchFeedXml(url) {
@@ -202,10 +218,12 @@ async function fetchTpgAlerts() {
       const data = await res.json();
       if (data && Array.isArray(data.stationboard)) {
         const delayed = data.stationboard.filter(item => item.stop && item.stop.delay > 0);
-        if (delayed.length > 0) return delayed.slice(0,2).map(item => `TPG / CFF : Ligne ${item.category}${item.number} vers ${item.to} — Retard de ${item.stop.delay} min`);
+        if (delayed.length > 0) {
+          return delayed.slice(0, 2).map(item => `TPG / CFF : Ligne ${item.category}${item.number} vers ${item.to} — Retard de ${item.stop.delay} min`);
+        }
       }
     }
-  } catch(e){}
+  } catch (e) {}
   return ["Transports publics genevois (TPG) : Service régulier et fluide sur le réseau"];
 }
 
@@ -214,12 +232,12 @@ async function getForecast() {
     const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=46.2044&longitude=6.1432&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=3&timezone=Europe%2FZurich');
     const data = await response.json();
     const d = data.daily;
-    const parts = d.time.map((day,i) => {
+    const parts = d.time.map((day, i) => {
       let label = "Aujourd'hui";
       if (i === 1) label = 'Demain';
       else if (i > 1) {
         const name = new Date(day + 'T12:00:00Z').toLocaleDateString('fr-CH', { weekday:'long', timeZone:'UTC' });
-        label = name.charAt(0).toUpperCase()+name.slice(1);
+        label = name.charAt(0).toUpperCase() + name.slice(1);
       }
       const desc = describeWeatherFr(d.weather_code[i]);
       return label + ' : ' + (desc ? desc + ', ' : '') + Math.round(d.temperature_2m_min[i]) + ' à ' + Math.round(d.temperature_2m_max[i]) + ' °C';
@@ -233,20 +251,25 @@ async function getForecast() {
 
 async function updateTicker() {
   const leTempsFeeds = [
-    "https://www.letemps.ch/suisse.rss","https://www.letemps.ch/articles.rss","https://www.letemps.ch/monde.rss","https://www.letemps.ch/economie.rss","https://www.letemps.ch/sport.rss"
-  ].map(url => ({ url }));
+    { url: "https://www.letemps.ch/suisse.rss" },
+    { url: "https://www.letemps.ch/articles.rss" },
+    { url: "https://www.letemps.ch/monde.rss" },
+    { url: "https://www.letemps.ch/economie.rss" },
+    { url: "https://www.letemps.ch/sport.rss" }
+  ];
+
   const twentyMinFeeds = [
-    "https://partner-feeds.20min.ch/rss/20minutes/suisse-romande/geneve",
-    "https://partner-feeds.20min.ch/rss/20minutes/suisse-romande",
-    "https://partner-feeds.20min.ch/rss/20minutes/suisse",
-    "https://partner-feeds.20min.ch/rss/20minutes",
-    "https://partner-feeds.20min.ch/rss/20minutes/monde"
-  ].map(url => ({ url }));
+    { url: "https://partner-feeds.20min.ch/rss/20minutes/suisse-romande/geneve" },
+    { url: "https://partner-feeds.20min.ch/rss/20minutes/suisse-romande" },
+    { url: "https://partner-feeds.20min.ch/rss/20minutes/suisse" },
+    { url: "https://partner-feeds.20min.ch/rss/20minutes" },
+    { url: "https://partner-feeds.20min.ch/rss/20minutes/monde" }
+  ];
 
   const forecastPromise = getForecast();
   const tpgPromise = fetchTpgAlerts();
-  const leTempsPromises = leTempsFeeds.map(f => fetchFeedXml(f.url));
-  const twentyMinPromises = twentyMinFeeds.map(f => fetchFeedXml(f.url));
+  const leTempsPromises = leTempsFeeds.map(feed => fetchFeedXml(feed.url));
+  const twentyMinPromises = twentyMinFeeds.map(feed => fetchFeedXml(feed.url));
 
   cachedForecastText = await forecastPromise;
   const tpgResults = await tpgPromise;
@@ -254,33 +277,63 @@ async function updateTicker() {
   const twentyMinResults = await Promise.all(twentyMinPromises);
 
   feedBatches = [];
+
   feedBatches.push({
     name: "Geneva Cam",
-    titles: ["Bienvenue sur Geneva Cam 😃 Bonne écoute de Radio Lac, le meilleur de la musique 🎵"]
+    titles: [
+      "Bienvenue sur Geneva Cam 😃 Bonne écoute de Radio Lac, le meilleur de la musique 🎵"
+    ]
   });
 
-  if (tpgResults && tpgResults.length > 0) feedBatches.push({ name: "Transports publics", titles: tpgResults });
-  leTempsResults.forEach((titles, idx) => { if (titles && titles.length) feedBatches.push({ name: `Le Temps ${idx}`, titles }); });
-  twentyMinResults.forEach((titles, idx) => { if (titles && titles.length) feedBatches.push({ name: `20Min ${idx}`, titles }); });
+  if (tpgResults && tpgResults.length > 0) {
+    feedBatches.push({ name: "Transports publics", titles: tpgResults });
+  }
+
+  leTempsResults.forEach((titles, idx) => {
+    if (titles && titles.length > 0) {
+      feedBatches.push({ name: `Le Temps ${idx}`, titles });
+    }
+  });
+
+  twentyMinResults.forEach((titles, idx) => {
+    if (titles && titles.length > 0) {
+      feedBatches.push({ name: `20Min ${idx}`, titles });
+    }
+  });
 
   renderNextRotationBatch();
 }
 
 function renderNextRotationBatch() {
   const headlines = [];
+
   if (feedBatches.length > 0) {
     const welcomeBatch = feedBatches[0];
     const total = welcomeBatch.titles.length;
-    for (let i = 0; i < Math.min(2, total); i++) headlines.push(`${welcomeBatch.name}: ${welcomeBatch.titles[(rotationOffset + i) % total]}`);
+    for (let i = 0; i < Math.min(2, total); i++) {
+      const storyIndex = (rotationOffset + i) % total;
+      headlines.push(`${welcomeBatch.name}: ${welcomeBatch.titles[storyIndex]}`);
+    }
   }
-  if (cachedForecastText) headlines.push(cachedForecastText);
+
+  if (cachedForecastText) {
+    headlines.push(cachedForecastText);
+  }
+
   for (let b = 1; b < feedBatches.length; b++) {
     const batch = feedBatches[b];
     const total = batch.titles.length;
-    for (let i = 0; i < Math.min(3, total); i++) headlines.push(`${batch.name}: ${batch.titles[(rotationOffset + i) % total]}`);
+    if (total > 0) {
+      for (let i = 0; i < Math.min(3, total); i++) {
+        const storyIndex = (rotationOffset + i) % total;
+        headlines.push(`${batch.name}: ${batch.titles[storyIndex]}`);
+      }
+    }
   }
+
   rotationOffset = (rotationOffset + 3) % 10;
-  if (headlines.length) {
+
+  if (headlines.length > 0) {
     const joined = headlines.join("   •   ");
     if (ticker) ticker.textContent = joined;
     startTickerSeamless();
@@ -291,11 +344,20 @@ function renderNextRotationBatch() {
 
 function startTickerSeamless() {
   if (!ticker) return;
-  if (currentAnimation) { try { currentAnimation.cancel(); } catch(e) {} currentAnimation = null; }
+
+  if (currentAnimation) {
+    try { currentAnimation.cancel(); } catch (e) {}
+    currentAnimation = null;
+  }
+
   const startPos = window.innerWidth;
   ticker.style.transform = `translateX(${startPos}px)`;
+
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (reduced) { setTimeout(renderNextRotationBatch, 10000); return; }
+  if (reduced) {
+    setTimeout(renderNextRotationBatch, 10000);
+    return;
+  }
 
   requestAnimationFrame(() => {
     const width = ticker.offsetWidth;
@@ -304,7 +366,19 @@ function startTickerSeamless() {
     const isMobileLandscape = window.matchMedia("(max-height: 500px) and (orientation: landscape)").matches;
     const base = isMobilePortrait ? distance * 14.25 : isMobileLandscape ? distance * 10.6666667 : distance * 8.0;
     const duration = Math.max(4000, Math.round(base * NEWS_TICKER_DURATION_MULTIPLIER));
-    currentAnimation = ticker.animate([{ transform: `translateX(${startPos}px)` }, { transform: `translateX(-${width}px)` }], { duration, iterations: 1, easing: "linear" });
+
+    currentAnimation = ticker.animate(
+      [
+        { transform: `translateX(${startPos}px)` },
+        { transform: `translateX(-${width}px)` }
+      ],
+      {
+        duration,
+        iterations: 1,
+        easing: "linear"
+      }
+    );
+
     currentAnimation.onfinish = () => renderNextRotationBatch();
   });
 }
@@ -313,12 +387,11 @@ updateTicker();
 setInterval(updateTicker, 600000);
 
 //
-// Songs widget and Tram ticker (30 minutes)
+// Songs widget and Tram ticker
 //
 const SONGS_URL = "https://www.radiolac.ch/cache/lac.json";
 const SONGS_REFRESH_MS = 30000;
 const GRANGE_CANAL_STOP_ID = "8592833";
-// Speed constant for tram ticker (px/s). Tune here.
 const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
 
 (function createSongsWidget() {
@@ -347,19 +420,35 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
     if (text === lastDepartureText) return;
     lastDepartureText = text;
     const loopText = text + "   •   ";
-    // duplicate to create seamless loop
     tramTrack.textContent = loopText + loopText;
     placeTramTicker();
-    if (tramAnimation) { try { tramAnimation.cancel(); } catch(e) {} tramAnimation = null; }
+
+    if (tramAnimation) {
+      try { tramAnimation.cancel(); } catch (e) {}
+      tramAnimation = null;
+    }
 
     const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduced) { tramTrack.style.transform = "translateX(0)"; return; }
+    if (reduced) {
+      tramTrack.style.transform = "translateX(0)";
+      return;
+    }
 
     requestAnimationFrame(() => {
       const copyWidth = tramTrack.getBoundingClientRect().width / 2;
       if (!copyWidth) return;
       const duration = Math.max(4000, Math.round((copyWidth / DEPARTURES_TICKER_SPEED) * 1000));
-      tramAnimation = tramTrack.animate([{ transform: "translateX(0px)" }, { transform: `translateX(-${copyWidth}px)` }], { duration, iterations: Infinity, easing: "linear" });
+      tramAnimation = tramTrack.animate(
+        [
+          { transform: "translateX(0px)" },
+          { transform: `translateX(-${copyWidth}px)` }
+        ],
+        {
+          duration,
+          iterations: Infinity,
+          easing: "linear"
+        }
+      );
     });
   };
 
@@ -368,29 +457,63 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
       const url = `https://transport.opendata.ch/v1/stationboard?id=${GRANGE_CANAL_STOP_ID}&limit=120`;
       const response = await fetch(url);
       if (!response.ok) throw new Error("HTTP " + response.status);
+
       const data = await response.json();
       const now = Date.now();
-      const cutoff = now + 30 * 60 * 1000; // 30 minutes
-      const formatter = new Intl.DateTimeFormat("fr-CH", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Zurich" });
-      const departures = (data.stationboard || [])
+
+      const tramEntries = (data.stationboard || [])
         .map(item => {
           const stop = item.stop || {};
           const departure = (stop.prognosis && stop.prognosis.departure) || stop.departure;
-          return { item, stop, departure, timestamp: departure ? Date.parse(departure) : NaN };
+          return {
+            item,
+            stop,
+            departure,
+            timestamp: departure ? Date.parse(departure) : NaN
+          };
         })
-        .filter(row => String(row.item && row.item.category || "").toUpperCase() === "T" &&
-          Number.isFinite(row.timestamp) && row.timestamp >= now && row.timestamp <= cutoff)
-        .sort((a,b) => a.timestamp - b.timestamp)
-        .map(row => {
-          const line = "T" + (row.item.number || "");
-          const delay = Number(row.stop.delay) > 0 ? " +" + row.stop.delay + " min" : "";
-          return `${line} → ${row.item.to || "destination inconnue"} ${formatter.format(new Date(row.timestamp))}${delay}`;
-        });
+        .filter(row => {
+          const isTram = String(row.item && row.item.category || "").toUpperCase() === "T";
+          return isTram && Number.isFinite(row.timestamp) && row.timestamp >= now;
+        })
+        .sort((a, b) => a.timestamp - b.timestamp);
 
-      renderTramTicker(departures.length ? "Grange-Canal : " + departures.join("   •   ") : "Grange-Canal : aucun tram prévu dans les 30 prochaines minutes");
-    } catch (e) {
-      console.warn("Tram departures error:", e);
-      renderTramTicker("Départs à Grange-Canal temporairement indisponibles");
+      let startWindow = now;
+      let endWindow = now + 30 * 60 * 1000;
+
+      const inNext30Minutes = tramEntries.filter(row => row.timestamp <= endWindow);
+
+      if (inNext30Minutes.length === 0 && tramEntries.length > 0) {
+        startWindow = tramEntries[0].timestamp;
+        endWindow = startWindow + 30 * 60 * 1000;
+      } else {
+        startWindow = now;
+        endWindow = now + 30 * 60 * 1000;
+      }
+
+      const matches = tramEntries.filter(row => row.timestamp >= startWindow && row.timestamp <= endWindow);
+
+      if (!matches.length) {
+        renderTramTicker("Grange-Canal, prochains départs : aucun tram prévu");
+        return;
+      }
+
+      const formatter = new Intl.DateTimeFormat("fr-CH", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Zurich"
+      });
+
+      const departures = matches.map(row => {
+        const line = "T" + (row.item.number || "");
+        const delay = Number(row.stop.delay) > 0 ? " +" + row.stop.delay + " min" : "";
+        return `${line} → ${row.item.to || "destination inconnue"} ${formatter.format(new Date(row.timestamp))}${delay}`;
+      });
+
+      renderTramTicker("Grange-Canal, prochains départs : " + departures.join("   •   "));
+    } catch (error) {
+      console.warn("Tram departures error:", error);
+      renderTramTicker("Grange-Canal, prochains départs : indisponible");
     }
   }
 
@@ -408,7 +531,12 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
     document.body.appendChild(box);
   }
 
-  const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+  const el = (tag, cls, text) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
 
   const makeRow = (label, song, isNow) => {
     const row = el("div", "sw-row" + (isNow ? " now" : ""));
@@ -416,9 +544,15 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
     img.alt = "";
     img.src = song.imagexs || "";
     img.onerror = () => { img.style.visibility = "hidden"; };
+
     const text = el("div", "sw-text");
     const time = song.simpletime ? " • " + song.simpletime : "";
-    text.append(el("div", "sw-label", label + time), el("div", "sw-title", song.title || ""), el("div", "sw-artist", song.interpret || ""));
+    text.append(
+      el("div", "sw-label", label + time),
+      el("div", "sw-title", song.title || ""),
+      el("div", "sw-artist", song.interpret || "")
+    );
+
     row.append(img, text);
     return row;
   };
@@ -433,7 +567,7 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
 
       const now = json.live && json.live[0];
       const isPortrait = window.matchMedia("(max-width: 768px) and (orientation: portrait)").matches;
-      const prevCount = isPortrait ? 2 : 2; // portrait shows current + 2 previous accessible by scroll; visible area limited to one row
+      const prevCount = isPortrait ? 2 : 2;
       const prev = (json.played || []).slice(0, prevCount);
 
       if (!now) throw new Error("No live entry");
@@ -444,7 +578,11 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
       if (key === lastKey) return;
       lastKey = key;
 
-      const children = [ el("div", "sw-header", "DERNIERS TITRES"), makeRow("En ce moment", now, true) ];
+      const children = [
+        el("div", "sw-header", "DERNIERS TITRES"),
+        makeRow("En ce moment", now, true)
+      ];
+
       if (prev && prev.length) {
         for (let i = 0; i < prev.length; i++) {
           const label = i === 0 ? "Juste avant" : "Avant cela";
@@ -467,6 +605,7 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
 
   refreshSongs();
   setInterval(refreshSongs, SONGS_REFRESH_MS);
+
   refreshTramDepartures();
   setInterval(refreshTramDepartures, SONGS_REFRESH_MS);
 
@@ -484,15 +623,19 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
 })();
 
 //
-// Overlay toggle behaviour: only toggles body.boxes-hidden; CSS keeps it bottom-left
+// Toggle for hiding top boxes
 //
 (function setupOverlayToggle() {
   const button = document.getElementById("overlay-toggle");
   if (!button) return;
+
   button.addEventListener("click", () => {
     const hidden = document.body.classList.toggle("boxes-hidden");
     button.textContent = hidden ? "Afficher" : "Masquer";
     button.setAttribute("aria-expanded", String(!hidden));
-    button.setAttribute("aria-label", hidden ? "Afficher les panneaux d'information" : "Masquer les panneaux d'information");
+    button.setAttribute(
+      "aria-label",
+      hidden ? "Afficher les panneaux d'information" : "Masquer les panneaux d'information"
+    );
   });
 })();
