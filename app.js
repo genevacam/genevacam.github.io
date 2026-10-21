@@ -233,12 +233,12 @@ async function fetchTpgAlerts() {
       if (data && Array.isArray(data.stationboard)) {
         const delayed = data.stationboard.filter(item => item.stop && item.stop.delay > 0);
         if (delayed.length > 0) {
-          return delayed.slice(0, 2).map(item => `TPG / CFF : Ligne ${item.category}${item.number} vers ${item.to} — Retard de ${item.stop.delay} min`);
+          return delayed.slice(0, 2).map(item => `TPG / CFF : Genève-Cornavin - Ligne ${item.category}${item.number} vers ${item.to} — Retard de ${item.stop.delay} min`);
         }
       }
     }
   } catch (e) {}
-  return ["Transports publics genevois (TPG) : Service régulier et fluide sur le réseau"];
+  return ["Transports publics genevois (TPG) : Genève-Cornavin- Service régulier et fluide sur le réseau"];
 }
 
 async function getForecast() {
