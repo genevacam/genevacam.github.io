@@ -1,7 +1,7 @@
 /* style.css - full file
    Includes:
    - desktop layout, weather, ticker, radio, songs
-   - portrait mobile: equal widths + +20% increase (39vw -> 46.8vw)
+   - portrait mobile: width increased by 20%
    - landscape mobile: aligned tops/bottoms
    - fixed bottom-left toggle
    - 30-minute smooth tram ticker
@@ -22,7 +22,7 @@
   --ticker-height: 82px;
   --tram-ticker-height: 68px;
 
-  /* portrait mobile width increased by 20% from 39vw => 46.8vw */
+  /* portrait mobile width 20% larger than prior 39vw */
   --mobile-box-width-portrait: 46.8vw;
 }
 
@@ -160,7 +160,7 @@ button,input,select,textarea{ font:inherit; }
 #tickerContainer{ position:fixed; left:0; bottom:0; width:100vw; height:var(--ticker-height); overflow:hidden; background:rgba(0,0,0,0.70); z-index:9999; }
 #ticker{ position:absolute; left:0; top:0; white-space:nowrap; line-height:var(--ticker-height); color:white; font-size:30px; font-weight:700; padding-left:12px; }
 
-/* Credits: force white text */
+/* Credits: force white */
 #credits{
   position:fixed;
   right:12px;
@@ -348,6 +348,11 @@ body.boxes-hidden #overlay-toggle { z-index:10013; }
     padding:8px 8px calc(8px + var(--tram-ticker-height) + 6px);
     border-radius:8px;
     z-index:10002;
+  }
+
+  #clockBox #fullscreen-btn{
+    top: 10px;
+    right: 8px;
   }
 
   #logo{ width:86px; margin-top:0; }

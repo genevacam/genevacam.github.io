@@ -8,6 +8,7 @@
 // - portrait mobile widths increased by 20%
 // - credits set to white
 // - 30-minute tram logic retained, with fallback to next future tram if no departures exist in the next 30 minutes
+// - fixed animation bug where repeated text caused the ticker to accelerate and snap badly on repeat
 
 console.log("GenevaCam loaded");
 
@@ -434,16 +435,17 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
   };
 
   const renderTramTicker = (text) => {
-    if (text === lastDepartureText) return;
-    lastDepartureText = text;
-    const loopText = text + "   •   ";
-    tramTrack.textContent = loopText + loopText;
-    placeTramTicker();
-
+    // Always restart the animation cleanly so it does not get faster by stacking loops
     if (tramAnimation) {
       try { tramAnimation.cancel(); } catch (e) {}
       tramAnimation = null;
     }
+
+    tramTrack.style.transform = "translateX(0)";
+    lastDepartureText = text;
+    const loopText = text + "   •   ";
+    tramTrack.textContent = loopText + loopText;
+    placeTramTicker();
 
     const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduced) {
@@ -538,7 +540,7 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
   window.addEventListener("resize", () => {
     placeTramTicker();
-    if (lastDepartureText) renderTramTicker(lastDepartureText);
+    renderTramTicker(lastDepartureText || "Grange-Canal, prochains départs : ");
   }, { passive: true });
 
   if (logoBox) {
