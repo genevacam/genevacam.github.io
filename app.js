@@ -1,13 +1,9 @@
-// GenevaCam - final app.js
-// Includes:
-// - live stream
-// - clock + weather
-// - radio toggle
-// - bottom ticker
-// - songs widget
-// - tram ticker with updated 30-minute logic
-// - UI toggle fixed bottom-left
-// - portrait/landscape adjustments from earlier iterations
+// GenevaCam app.js
+// Updated:
+// - tram ticker speed increased by 50%
+// - feed naming uses real labels instead of Le Temps 0 / 20 Minutes 0
+// - 30-minute tram logic remains in place
+// - mobile and desktop layout behaviors retained
 
 console.log("GenevaCam loaded");
 
@@ -57,7 +53,7 @@ function isFullscreen() {
 })();
 
 //
-// Webcam stream (HLS)
+// Video stream (HLS)
 //
 const video = document.getElementById("video");
 const STREAM_URL = "https://edge16.vedge.infomaniak.com/livecast/ik:sig2/chunklist_w1380254353.m3u8";
@@ -197,6 +193,24 @@ let cachedForecastText = "";
 let currentAnimation = null;
 const NEWS_TICKER_DURATION_MULTIPLIER = 0.85;
 
+const leTempsFeeds = [
+  { name: 'Le Temps Suisse', url: 'https://www.letemps.ch/suisse.rss' },
+  { name: 'Le Temps Articles', url: 'https://www.letemps.ch/articles.rss' },
+  { name: 'Le Temps Monde', url: 'https://www.letemps.ch/monde.rss' },
+  { name: 'Le Temps Économie', url: 'https://www.letemps.ch/economie.rss' },
+  { name: 'Le Temps Sport', url: 'https://www.letemps.ch/sport.rss' }
+];
+
+const twentyMinFeeds = [
+  { name: '20 Minutes Genève', url: 'https://partner-feeds.20min.ch/rss/20minutes/suisse-romande/geneve' },
+  { name: '20 Minutes Suisse Romande', url: 'https://partner-feeds.20min.ch/rss/20minutes/suisse-romande' },
+  { name: '20 Minutes Suisse', url: 'https://partner-feeds.20min.ch/rss/20minutes/suisse' },
+  { name: '20 Minutes Principal', url: 'https://partner-feeds.20min.ch/rss/20minutes' },
+  { name: '20 Minutes Monde', url: 'https://partner-feeds.20min.ch/rss/20minutes/monde' },
+  { name: '20 Minutes Économie', url: 'https://partner-feeds.20min.ch/rss/20minutes/economie' },
+  { name: '20 Minutes Sports', url: 'https://partner-feeds.20min.ch/rss/20minutes/sports' }
+];
+
 async function fetchFeedXml(url) {
   try {
     const response = await fetch(proxied(url));
@@ -250,24 +264,9 @@ async function getForecast() {
 }
 
 async function updateTicker() {
-  const leTempsFeeds = [
-    { url: "https://www.letemps.ch/suisse.rss" },
-    { url: "https://www.letemps.ch/articles.rss" },
-    { url: "https://www.letemps.ch/monde.rss" },
-    { url: "https://www.letemps.ch/economie.rss" },
-    { url: "https://www.letemps.ch/sport.rss" }
-  ];
-
-  const twentyMinFeeds = [
-    { url: "https://partner-feeds.20min.ch/rss/20minutes/suisse-romande/geneve" },
-    { url: "https://partner-feeds.20min.ch/rss/20minutes/suisse-romande" },
-    { url: "https://partner-feeds.20min.ch/rss/20minutes/suisse" },
-    { url: "https://partner-feeds.20min.ch/rss/20minutes" },
-    { url: "https://partner-feeds.20min.ch/rss/20minutes/monde" }
-  ];
-
   const forecastPromise = getForecast();
   const tpgPromise = fetchTpgAlerts();
+
   const leTempsPromises = leTempsFeeds.map(feed => fetchFeedXml(feed.url));
   const twentyMinPromises = twentyMinFeeds.map(feed => fetchFeedXml(feed.url));
 
@@ -286,18 +285,26 @@ async function updateTicker() {
   });
 
   if (tpgResults && tpgResults.length > 0) {
-    feedBatches.push({ name: "Transports publics", titles: tpgResults });
+    feedBatches.push({ name: "Transports publics à Genève", titles: tpgResults });
   }
 
   leTempsResults.forEach((titles, idx) => {
+    const feed = leTempsFeeds[idx];
     if (titles && titles.length > 0) {
-      feedBatches.push({ name: `Le Temps ${idx}`, titles });
+      feedBatches.push({
+        name: feed.name,
+        titles: titles
+      });
     }
   });
 
   twentyMinResults.forEach((titles, idx) => {
+    const feed = twentyMinFeeds[idx];
     if (titles && titles.length > 0) {
-      feedBatches.push({ name: `20Min ${idx}`, titles });
+      feedBatches.push({
+        name: feed.name,
+        titles: titles
+      });
     }
   });
 
@@ -387,12 +394,13 @@ updateTicker();
 setInterval(updateTicker, 600000);
 
 //
-// Songs widget and Tram ticker
+// Songs widget + tram ticker
 //
 const SONGS_URL = "https://www.radiolac.ch/cache/lac.json";
 const SONGS_REFRESH_MS = 30000;
 const GRANGE_CANAL_STOP_ID = "8592833";
-const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
+// 50% faster than prior tram speed
+const DEPARTURES_TICKER_SPEED = 92.0 * 1.15 * 1.5;
 
 (function createSongsWidget() {
   const logoBox = document.getElementById("logoBox");
@@ -633,9 +641,6 @@ const DEPARTURES_TICKER_SPEED = 92.0 * 1.15;
     const hidden = document.body.classList.toggle("boxes-hidden");
     button.textContent = hidden ? "Afficher" : "Masquer";
     button.setAttribute("aria-expanded", String(!hidden));
-    button.setAttribute(
-      "aria-label",
-      hidden ? "Afficher les panneaux d'information" : "Masquer les panneaux d'information"
-    );
+    button.setAttribute("aria-label", hidden ? "Afficher les panneaux d'information" : "Masquer les panneaux d'information");
   });
 })();
