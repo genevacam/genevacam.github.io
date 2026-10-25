@@ -8,6 +8,7 @@
 // - mobile landscape fullscreen toggle moved down by its own height
 // - tram ticker loop made smooth and continuous
 // - 30-minute tram logic retained, with fallback to next future tram if no departures exist in the next 30 minutes
+// - DST-safe tram parsing added so Zurich departures stay accurate after summer time ends
 
 console.log("GenevaCam loaded");
 
@@ -247,7 +248,7 @@ async function fetchTpgAlerts() {
 
 async function getForecast() {
   try {
-    const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=46.2044&longitude=6.1432&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=3&timezone=Europe%2FZurich');
+    const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=46.2044&longitude=6.1432&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=3&timezone=Europe/Zurich');
     const data = await response.json();
     const d = data.daily;
     const parts = d.time.map((day, i) => {
@@ -405,6 +406,60 @@ const SONGS_URL = "https://www.radiolac.ch/cache/lac.json";
 const SONGS_REFRESH_MS = 30000;
 const GRANGE_CANAL_STOP_ID = "8592833";
 
+function getTimezoneOffsetMs(date, timeZone) {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23'
+  });
+
+  const parts = formatter.formatToParts(date);
+  const map = {};
+  for (const part of parts) {
+    if (part.type !== 'literal') map[part.type] = part.value;
+  }
+
+  const utcTime = Date.UTC(
+    Number(map.year),
+    Number(map.month) - 1,
+    Number(map.day),
+    Number(map.hour),
+    Number(map.minute),
+    Number(map.second)
+  );
+
+  return utcTime - date.getTime();
+}
+
+function parseZurichTimestamp(value) {
+  if (value === null || value === undefined || value === '') return NaN;
+
+  const source = String(value).trim();
+  if (!source) return NaN;
+
+  const hasTimezone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(source);
+  if (hasTimezone) {
+    const parsed = Date.parse(source);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
+  const match = source.match(/^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2})(?::([0-9]{2}))?$/);
+  if (!match) {
+    const parsed = Date.parse(source);
+    return Number.isFinite(parsed) ? parsed : NaN;
+  }
+
+  const [, year, month, day, hour, minute, second = '00'] = match;
+  const localMs = Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+  const offsetMs = getTimezoneOffsetMs(new Date(localMs), 'Europe/Zurich');
+  return localMs - offsetMs;
+}
+
 // Desktop: increased by 50%
 const DESKTOP_DEPARTURES_TICKER_SPEED = 92.0 * 1.15 * 1.5;
 
@@ -489,11 +544,12 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
         .map(item => {
           const stop = item.stop || {};
           const departure = (stop.prognosis && stop.prognosis.departure) || stop.departure;
+          const timestamp = parseZurichTimestamp(departure);
           return {
             item,
             stop,
             departure,
-            timestamp: departure ? Date.parse(departure) : NaN
+            timestamp: Number.isFinite(timestamp) ? timestamp : NaN
           };
         })
         .filter(row => {
