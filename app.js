@@ -8,7 +8,8 @@
 // - mobile landscape fullscreen toggle moved down by its own height
 // - tram ticker loop made smooth and continuous
 // - 30-minute tram logic retained, with fallback to next future tram if no departures exist in the next 30 minutes
-// - DST-safe tram parsing added so Zurich departures stay accurate after summer time ends
+// - DST-safe Zurich tram parsing added so departures stay accurate after summer time ends
+// - news items older than 18 hours are now filtered out from the news ticker
 
 console.log("GenevaCam loaded");
 
@@ -197,6 +198,7 @@ let rotationOffset = 0;
 let cachedForecastText = "";
 let currentAnimation = null;
 const NEWS_TICKER_DURATION_MULTIPLIER = 0.85;
+const MAX_NEWS_AGE_HOURS = 18;
 
 const leTempsFeeds = [
   { name: 'Le Temps Suisse', url: 'https://www.letemps.ch/suisse.rss' },
@@ -216,14 +218,40 @@ const twentyMinFeeds = [
   { name: '20 Minutes Sports', url: 'https://partner-feeds.20min.ch/rss/20minutes/sports' }
 ];
 
+function isRecentEnough(dateText) {
+  if (!dateText) return true;
+
+  const publishedMs = Date.parse(dateText);
+  if (!Number.isFinite(publishedMs)) return true;
+
+  const ageHours = (Date.now() - publishedMs) / (1000 * 60 * 60);
+  return ageHours <= MAX_NEWS_AGE_HOURS;
+}
+
 async function fetchFeedXml(url) {
   try {
     const response = await fetch(proxied(url));
     if (!response.ok) return [];
+
     const xmlText = await response.text();
     const xmlDoc = new DOMParser().parseFromString(xmlText, "text/xml");
     if (xmlDoc.querySelector("parsererror")) return [];
-    return [...xmlDoc.querySelectorAll("item > title, entry > title")].map(t => t.textContent.trim()).filter(Boolean);
+
+    const items = [...xmlDoc.querySelectorAll("item, entry")];
+
+    return items
+      .map(item => {
+        const title = item.querySelector("title")?.textContent?.trim() || "";
+        const published =
+          item.querySelector("pubDate")?.textContent?.trim() ||
+          item.querySelector("published")?.textContent?.trim() ||
+          item.querySelector("updated")?.textContent?.trim() ||
+          "";
+
+        return { title, published };
+      })
+      .filter(item => item.title && isRecentEnough(item.published))
+      .map(item => item.title);
   } catch (e) {
     console.warn("Feed error:", url, e);
     return [];
@@ -406,58 +434,54 @@ const SONGS_URL = "https://www.radiolac.ch/cache/lac.json";
 const SONGS_REFRESH_MS = 30000;
 const GRANGE_CANAL_STOP_ID = "8592833";
 
-function getTimezoneOffsetMs(date, timeZone) {
-  const formatter = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23'
-  });
+function getZurichOffsetMinutes(date) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Zurich",
+    timeZoneName: "shortOffset",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  }).formatToParts(date);
 
-  const parts = formatter.formatToParts(date);
-  const map = {};
-  for (const part of parts) {
-    if (part.type !== 'literal') map[part.type] = part.value;
-  }
+  const tzName = parts.find(p => p.type === "timeZoneName")?.value || "GMT+1";
+  const match = tzName.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
 
-  const utcTime = Date.UTC(
-    Number(map.year),
-    Number(map.month) - 1,
-    Number(map.day),
-    Number(map.hour),
-    Number(map.minute),
-    Number(map.second)
-  );
+  if (!match) return 60;
 
-  return utcTime - date.getTime();
+  const sign = match[1] === "-" ? -1 : 1;
+  const hours = Number(match[2] || 0);
+  const minutes = Number(match[3] || 0);
+
+  return sign * (hours * 60 + minutes);
 }
 
 function parseZurichTimestamp(value) {
-  if (value === null || value === undefined || value === '') return NaN;
+  if (value === null || value === undefined || value === "") return NaN;
 
   const source = String(value).trim();
   if (!source) return NaN;
 
-  const hasTimezone = /[zZ]|[+-]\d{2}:?\d{2}$/.test(source);
-  if (hasTimezone) {
+  // If the API already gives a timezone, trust it.
+  if (/[zZ]|[+-]\d{2}:?\d{2}$/.test(source)) {
     const parsed = Date.parse(source);
     return Number.isFinite(parsed) ? parsed : NaN;
   }
 
-  const match = source.match(/^([0-9]{4})-([0-9]{2})-([0-9]{2})T([0-9]{2}):([0-9]{2})(?::([0-9]{2}))?$/);
+  // Zurich wall-clock timestamp without timezone offset.
+  const match = source.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
   if (!match) {
     const parsed = Date.parse(source);
     return Number.isFinite(parsed) ? parsed : NaN;
   }
 
-  const [, year, month, day, hour, minute, second = '00'] = match;
-  const localMs = Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
-  const offsetMs = getTimezoneOffsetMs(new Date(localMs), 'Europe/Zurich');
-  return localMs - offsetMs;
+  const [, y, mo, d, hh, mm, ss = "00"] = match;
+  const utcMs = Date.UTC(Number(y), Number(mo) - 1, Number(d), Number(hh), Number(mm), Number(ss));
+  const offsetMinutes = getZurichOffsetMinutes(new Date(utcMs));
+  return utcMs - (offsetMinutes * 60 * 1000);
 }
 
 // Desktop: increased by 50%
@@ -700,9 +724,7 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
   });
 })();
 
-//
 // Toggle for hiding top boxes
-//
 (function setupOverlayToggle() {
   const button = document.getElementById("overlay-toggle");
   if (!button) return;
