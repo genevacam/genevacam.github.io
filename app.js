@@ -433,6 +433,8 @@ setInterval(updateTicker, 600000);
 const SONGS_URL = "https://www.radiolac.ch/cache/lac.json";
 const SONGS_REFRESH_MS = 30000;
 const GRANGE_CANAL_STOP_ID = "8592833";
+const TRAM_LOOKAHEAD_MS = 30 * 60 * 1000;
+const STATIONBOARD_LIMIT = 100;
 
 function getZurichOffsetMinutes(date) {
   const parts = new Intl.DateTimeFormat("en-US", {
@@ -522,29 +524,54 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
     lastDepartureText = text;
 
-    // Use triple copy so the loop can move smoothly from end back to start without a visible snap.
-    tramTrack.textContent = text + "   •   " + text + "   •   " + text;
+    // Three identical copies provide a seamless infinite loop.
+    tramTrack.replaceChildren();
+    tramTrack.style.display = "inline-flex";
+
+    for (let i = 0; i < 3; i++) {
+      const segment = document.createElement("span");
+      segment.className = "tram-ticker-segment";
+      segment.textContent = `${text}   •   `;
+      tramTrack.appendChild(segment);
+    }
+
     placeTramTicker();
 
-    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     if (reduced) {
       tramTrack.style.transform = "translateX(0)";
       return;
     }
 
     requestAnimationFrame(() => {
-      const sectionWidth = tramTrack.scrollWidth / 3;
-      const isMobilePortrait = window.matchMedia("(max-width: 768px) and (orientation: portrait)").matches;
-      const isMobileLandscape = window.matchMedia("(max-height: 500px) and (orientation: landscape)").matches;
+      const firstSegment = tramTrack.firstElementChild;
+      if (!firstSegment) return;
+
+      const cycleWidth = firstSegment.getBoundingClientRect().width;
+      if (!cycleWidth) return;
+
+      const isMobilePortrait = window.matchMedia(
+        "(max-width: 768px) and (orientation: portrait)"
+      ).matches;
+      const isMobileLandscape = window.matchMedia(
+        "(max-height: 500px) and (orientation: landscape)"
+      ).matches;
       const isMobile = isMobilePortrait || isMobileLandscape;
 
-      const currentSpeed = isMobile ? MOBILE_DEPARTURES_TICKER_SPEED : DESKTOP_DEPARTURES_TICKER_SPEED;
-      const duration = Math.max(5000, Math.round((sectionWidth / currentSpeed) * 1000));
+      const currentSpeed = isMobile
+        ? MOBILE_DEPARTURES_TICKER_SPEED
+        : DESKTOP_DEPARTURES_TICKER_SPEED;
+      const duration = Math.max(
+        5000,
+        Math.round((cycleWidth / currentSpeed) * 1000)
+      );
 
       tramAnimation = tramTrack.animate(
         [
           { transform: "translateX(0px)" },
-          { transform: `translateX(-${sectionWidth}px)` }
+          { transform: `translateX(-${cycleWidth}px)` }
         ],
         {
           duration,
@@ -557,7 +584,9 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
   async function refreshTramDepartures() {
     try {
-      const url = `https://transport.opendata.ch/v1/stationboard?id=${GRANGE_CANAL_STOP_ID}&limit=120`;
+      const url =
+        `https://transport.opendata.ch/v1/stationboard` +
+        `?id=${GRANGE_CANAL_STOP_ID}&limit=${STATIONBOARD_LIMIT}`;
       const response = await fetch(url);
       if (!response.ok) throw new Error("HTTP " + response.status);
 
@@ -567,8 +596,11 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
       const tramEntries = (data.stationboard || [])
         .map(item => {
           const stop = item.stop || {};
-          const departure = (stop.prognosis && stop.prognosis.departure) || stop.departure;
+          const departure =
+            (stop.prognosis && stop.prognosis.departure) ||
+            stop.departure;
           const timestamp = parseZurichTimestamp(departure);
+
           return {
             item,
             stop,
@@ -577,26 +609,38 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
           };
         })
         .filter(row => {
-          const isTram = String(row.item && row.item.category || "").toUpperCase() === "T";
-          return isTram && Number.isFinite(row.timestamp) && row.timestamp >= now;
+          const isTram =
+            String(row.item && row.item.category || "")
+              .toUpperCase() === "T";
+          return isTram &&
+            Number.isFinite(row.timestamp) &&
+            row.timestamp >= now;
         })
         .sort((a, b) => a.timestamp - b.timestamp);
 
       let startWindow = now;
-      let endWindow = now + 30 * 60 * 1000;
+      let endWindow = now + TRAM_LOOKAHEAD_MS;
 
-      const inNext30Minutes = tramEntries.filter(row => row.timestamp <= endWindow);
+      const inNext30Minutes =
+        tramEntries.filter(row => row.timestamp <= endWindow);
 
-      // If no departures in the next 30 minutes, use the first future tram as the start of a new 30-minute window
+      // Fallback: if no tram departs within the next 30 minutes,
+      // show the next 30-minute window beginning with the first future tram.
       if (inNext30Minutes.length === 0 && tramEntries.length > 0) {
         startWindow = tramEntries[0].timestamp;
-        endWindow = startWindow + 30 * 60 * 1000;
+        endWindow = startWindow + TRAM_LOOKAHEAD_MS;
       }
 
-      const matches = tramEntries.filter(row => row.timestamp >= startWindow && row.timestamp <= endWindow);
+      const matches = tramEntries.filter(
+        row =>
+          row.timestamp >= startWindow &&
+          row.timestamp <= endWindow
+      );
 
       if (!matches.length) {
-        renderTramTicker("Grange-Canal, prochains départs : aucun tram prévu");
+        renderTramTicker(
+          "Grange-Canal, prochains départs : aucun tram prévu"
+        );
         return;
       }
 
@@ -608,20 +652,31 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
       const departures = matches.map(row => {
         const line = "T" + (row.item.number || "");
-        const delay = Number(row.stop.delay) > 0 ? " +" + row.stop.delay + " min" : "";
+        const delay =
+          Number(row.stop.delay) > 0
+            ? " +" + row.stop.delay + " min"
+            : "";
         return `${line} → ${row.item.to || "destination inconnue"} ${formatter.format(new Date(row.timestamp))}${delay}`;
       });
 
-      renderTramTicker("Grange-Canal, prochains départs : " + departures.join("   •   "));
+      renderTramTicker(
+        "Grange-Canal, prochains départs : " +
+        departures.join("   •   ")
+      );
     } catch (error) {
       console.warn("Tram departures error:", error);
-      renderTramTicker("Grange-Canal, prochains départs : indisponible");
+      renderTramTicker(
+        "Grange-Canal, prochains départs : indisponible"
+      );
     }
   }
 
   window.addEventListener("resize", () => {
     placeTramTicker();
-    renderTramTicker(lastDepartureText || "Grange-Canal, prochains départs : ");
+    renderTramTicker(
+      lastDepartureText ||
+      "Grange-Canal, prochains départs : "
+    );
   }, { passive: true });
 
   if (logoBox) {
@@ -668,7 +723,10 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
       const json = await res.json();
 
       const now = json.live && json.live[0];
-      const isPortrait = window.matchMedia("(max-width: 768px) and (orientation: portrait)").matches;
+      const isPortrait =
+        window.matchMedia(
+          "(max-width: 768px) and (orientation: portrait)"
+        ).matches;
       const prevCount = isPortrait ? 2 : 2;
       const prev = (json.played || []).slice(0, prevCount);
 
@@ -676,7 +734,9 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
       box.classList.remove("stale");
 
-      const key = [now, ...prev].map(s => s.playtime || s.title).join("|");
+      const key = [now, ...prev]
+        .map(s => s.playtime || s.title)
+        .join("|");
       if (key === lastKey) return;
       lastKey = key;
 
@@ -687,13 +747,14 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
 
       if (prev && prev.length) {
         for (let i = 0; i < prev.length; i++) {
-          const label = i === 0 ? "Juste avant" : "Avant cela";
+          const label =
+            i === 0 ? "Juste avant" : "Avant cela";
           children.push(makeRow(label, prev[i], false));
         }
       }
 
-      const list = document.createElement('div');
-      list.className = 'sw-list';
+      const list = document.createElement("div");
+      list.className = "sw-list";
       children.forEach(c => list.appendChild(c));
       box.replaceChildren(list);
       box.hidden = false;
@@ -730,9 +791,14 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
   if (!button) return;
 
   button.addEventListener("click", () => {
-    const hidden = document.body.classList.toggle("boxes-hidden");
-    button.textContent = hidden ? "Afficher" : "Masquer";
+    const hidden =
+      document.body.classList.toggle("boxes-hidden");
+    button.textContent =
+      hidden ? "Afficher" : "Masquer";
     button.setAttribute("aria-expanded", String(!hidden));
-    button.setAttribute("aria-label", hidden ? "Afficher les panneaux d'information" : "Masquer les panneaux d'information");
+    button.setAttribute("aria-label",
+      hidden
+        ? "Afficher les panneaux d'information"
+        : "Masquer les panneaux d'information");
   });
 })();

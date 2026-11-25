@@ -151,10 +151,25 @@ button,input,select,textarea{ font:inherit; }
   border-bottom-right-radius:8px;
   line-height:1;
 }
-#tram-ticker-track{ display:inline-block; white-space:nowrap; will-change:transform; }
+
+#tram-ticker-track{
+  display:inline-flex;
+  white-space:nowrap;
+  will-change:transform;
+}
+
+.tram-ticker-segment{
+  display:inline-block;
+  flex:none;
+  white-space:nowrap;
+}
 
 /* hide duplicate tram elements */
-#logoBox > #tram-ticker, #logoBox.has-songs > #tram-ticker, #songs-widget > #tram-ticker { display:none !important; }
+#logoBox > #tram-ticker,
+#logoBox.has-songs > #tram-ticker,
+#songs-widget > #tram-ticker {
+  display:none !important;
+}
 
 /* Bottom news ticker */
 #tickerContainer{ position:fixed; left:0; bottom:0; width:100vw; height:var(--ticker-height); overflow:hidden; background:rgba(0,0,0,0.70); z-index:9999; }
