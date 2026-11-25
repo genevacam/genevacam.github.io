@@ -507,7 +507,8 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
   tramTicker.appendChild(tramTrack);
 
   let tramAnimation = null;
-  let lastDepartureText = "";
+let tramAnimationProgress = 0;
+let lastDepartureText = "";
 
   const placeTramTicker = () => {
     if (!clockBox) return;
@@ -517,10 +518,26 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
   const renderTramTicker = (text) => {
     if (!text) return;
 
-    if (tramAnimation) {
-      try { tramAnimation.cancel(); } catch (e) {}
-      tramAnimation = null;
-    }
+// Keep the current position when a data refresh redraws the ticker.
+if (tramAnimation) {
+  const timing = tramAnimation.effect?.getTiming();
+  const duration = timing?.duration;
+  const currentTime = Number(tramAnimation.currentTime);
+
+  if (
+    duration &&
+    Number.isFinite(duration) &&
+    Number.isFinite(currentTime)
+  ) {
+    tramAnimationProgress = currentTime / duration;
+  }
+
+  try {
+    tramAnimation.cancel();
+  } catch (e) {}
+
+  tramAnimation = null;
+}
 
     lastDepartureText = text;
 
@@ -568,19 +585,20 @@ const MOBILE_DEPARTURES_TICKER_SPEED = DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
         Math.round((cycleWidth / currentSpeed) * 1000)
       );
 
-      tramAnimation = tramTrack.animate(
-        [
-          { transform: "translateX(0px)" },
-          { transform: `translateX(-${cycleWidth}px)` }
-        ],
-        {
-          duration,
-          iterations: Infinity,
-          easing: "linear"
-        }
-      );
-    });
-  };
+tramAnimation = tramTrack.animate(
+  [
+    { transform: "translateX(0px)" },
+    { transform: `translateX(-${cycleWidth}px)` }
+  ],
+  {
+    duration,
+    iterations: Infinity,
+    easing: "linear"
+  }
+);
+
+tramAnimation.currentTime = tramAnimationProgress * duration;
+
 
   async function refreshTramDepartures() {
     try {
