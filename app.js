@@ -515,29 +515,31 @@ let lastDepartureText = "";
     if (tramTicker.parentElement !== clockBox) clockBox.appendChild(tramTicker);
   };
 
-  const renderTramTicker = (text) => {
+    const renderTramTicker = (text) => {
     if (!text) return;
 
-// Keep the current position when a data refresh redraws the ticker.
-if (tramAnimation) {
-  const timing = tramAnimation.effect?.getTiming();
-  const duration = timing?.duration;
-  const currentTime = Number(tramAnimation.currentTime);
+    // Avoid restarting the animation when the text has not changed.
+    if (text === lastDepartureText && tramAnimation) return;
 
-  if (
-    duration &&
-    Number.isFinite(duration) &&
-    Number.isFinite(currentTime)
-  ) {
-    tramAnimationProgress = currentTime / duration;
-  }
+    // Save the current position before replacing the ticker contents.
+    if (tramAnimation) {
+      const duration = tramAnimation.effect?.getTiming()?.duration;
+      const currentTime = Number(tramAnimation.currentTime);
 
-  try {
-    tramAnimation.cancel();
-  } catch (e) {}
+      if (
+        typeof duration === "number" &&
+        duration > 0 &&
+        Number.isFinite(currentTime)
+      ) {
+        tramAnimationProgress = (currentTime % duration) / duration;
+      }
 
-  tramAnimation = null;
-}
+      try {
+        tramAnimation.cancel();
+      } catch (e) {}
+
+      tramAnimation = null;
+    }
 
     lastDepartureText = text;
 
@@ -559,6 +561,7 @@ if (tramAnimation) {
 
     if (reduced) {
       tramTrack.style.transform = "translateX(0)";
+      tramAnimationProgress = 0;
       return;
     }
 
@@ -585,19 +588,22 @@ if (tramAnimation) {
         Math.round((cycleWidth / currentSpeed) * 1000)
       );
 
-tramAnimation = tramTrack.animate(
-  [
-    { transform: "translateX(0px)" },
-    { transform: `translateX(-${cycleWidth}px)` }
-  ],
-  {
-    duration,
-    iterations: Infinity,
-    easing: "linear"
-  }
-);
+      tramAnimation = tramTrack.animate(
+        [
+          { transform: "translateX(0px)" },
+          { transform: `translateX(-${cycleWidth}px)` }
+        ],
+        {
+          duration,
+          iterations: Infinity,
+          easing: "linear"
+        }
+      );
 
-tramAnimation.currentTime = tramAnimationProgress * duration;
+      // Continue from the saved relative position.
+      tramAnimation.currentTime = tramAnimationProgress * duration;
+    });
+  };
 
 
   async function refreshTramDepartures() {
