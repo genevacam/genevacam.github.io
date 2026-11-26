@@ -19,13 +19,23 @@ function isFullscreen() {
   if (!btn) return;
 
   const root = document.documentElement;
-  const canFullscreen = document.fullscreenEnabled || document.webkitFullscreenEnabled;
-  if (!canFullscreen) { btn.hidden = true; return; }
+  const canFullscreen =
+    document.fullscreenEnabled ||
+    document.webkitFullscreenEnabled;
+
+  if (!canFullscreen) {
+    btn.hidden = true;
+    return;
+  }
 
   function updateButton() {
     const on = isFullscreen();
     btn.classList.toggle("is-fullscreen", on);
-    const label = on ? "Quitter le plein écran" : "Plein écran";
+
+    const label = on
+      ? "Quitter le plein écran"
+      : "Plein écran";
+
     btn.setAttribute("aria-label", label);
     btn.title = label;
   }
@@ -33,11 +43,19 @@ function isFullscreen() {
   btn.addEventListener("click", () => {
     try {
       if (isFullscreen()) {
-        const exit = document.exitFullscreen || document.webkitExitFullscreen;
-        Promise.resolve(exit.call(document)).catch(err => console.warn("Exit fullscreen:", err));
+        const exit =
+          document.exitFullscreen ||
+          document.webkitExitFullscreen;
+        Promise.resolve(exit.call(document)).catch(err =>
+          console.warn("Exit fullscreen:", err)
+        );
       } else {
-        const enter = root.requestFullscreen || root.webkitRequestFullscreen;
-        Promise.resolve(enter.call(root)).catch(err => console.warn("Fullscreen:", err));
+        const enter =
+          root.requestFullscreen ||
+          root.webkitRequestFullscreen;
+        Promise.resolve(enter.call(root)).catch(err =>
+          console.warn("Fullscreen:", err)
+        );
       }
     } catch (err) {
       console.warn("Fullscreen error:", err);
@@ -58,41 +76,105 @@ function isFullscreen() {
   box.setAttribute("role", "note");
   box.textContent =
     "Salut Sandrine, bon courage ! J’ai hâte de te revoir. Gros Bisous 😘";
+
   document.body.appendChild(box);
+
+  window.placeSandrineBox = function () {
+    const songs = document.getElementById("songs-widget");
+    if (!songs) return;
+
+    const portraitMobile = window.matchMedia(
+      "(max-width: 768px) and (orientation: portrait)"
+    ).matches;
+
+    if (portraitMobile) {
+      box.style.removeProperty("left");
+      box.style.removeProperty("top");
+      box.style.removeProperty("width");
+      box.style.removeProperty("height");
+      box.style.removeProperty("font-size");
+      box.style.removeProperty("display");
+      return;
+    }
+
+    const smallLandscape = window.matchMedia(
+      "(max-height: 500px) and (orientation: landscape)"
+    ).matches;
+
+    if (smallLandscape) {
+      box.style.display = "none";
+      return;
+    }
+
+    const rect = songs.getBoundingClientRect();
+    if (!rect.width || songs.hidden) return;
+
+    box.style.display = "flex";
+    box.style.left = `${rect.left}px`;
+    box.style.top = `${rect.bottom + 14}px`;
+    box.style.width = `${rect.width}px`;
+    box.style.height = "82px";
+    box.style.fontSize = "36px";
+  };
+
+  window.addEventListener("resize", window.placeSandrineBox);
+  requestAnimationFrame(window.placeSandrineBox);
 })();
 
 //
 // Webcam stream (HLS)
 //
 const video = document.getElementById("video");
-const STREAM_URL = "https://edge16.vedge.infomaniak.com/livecast/ik:sig2/chunklist_w1380254353.m3u8";
+const STREAM_URL =
+  "https://edge16.vedge.infomaniak.com/livecast/ik:sig2/chunklist_w1380254353.m3u8";
+
 let hls = null;
 
 function startStream() {
   if (hls) {
-    try { hls.destroy(); } catch (e) {}
+    try {
+      hls.destroy();
+    } catch (e) {}
     hls = null;
   }
 
-  if (video && video.canPlayType && video.canPlayType("application/vnd.apple.mpegurl")) {
+  if (
+    video &&
+    video.canPlayType &&
+    video.canPlayType("application/vnd.apple.mpegurl")
+  ) {
     video.src = STREAM_URL;
     video.load();
   } else if (window.Hls && Hls.isSupported()) {
     hls = new Hls();
+
     hls.on(Hls.Events.ERROR, (event, data) => {
       if (!data.fatal) return;
-      console.warn("Stream error:", data.type, data.details);
-      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-      else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-      else setTimeout(startStream, 5000);
+
+      console.warn(
+        "Stream error:",
+        data.type,
+        data.details
+      );
+
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        hls.startLoad();
+      } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+        hls.recoverMediaError();
+      } else {
+        setTimeout(startStream, 5000);
+      }
     });
+
     hls.loadSource(STREAM_URL);
     hls.attachMedia(video);
   } else if (video) {
     video.src = STREAM_URL;
   }
 
-  if (video) video.play().catch(()=>{});
+  if (video) {
+    video.play().catch(() => {});
+  }
 }
 
 if (video) {
@@ -101,16 +183,24 @@ if (video) {
     setTimeout(startStream, 5000);
   });
 }
+
 startStream();
 
 let lastVideoTime = -1;
+
 setInterval(() => {
   if (!video) return;
-  if (video.paused) { video.play().catch(()=>{}); return; }
+
+  if (video.paused) {
+    video.play().catch(() => {});
+    return;
+  }
+
   if (video.currentTime === lastVideoTime) {
     console.warn("Video stalled, restarting stream");
     startStream();
   }
+
   lastVideoTime = video.currentTime;
 }, 30000);
 
@@ -138,31 +228,38 @@ function describeWeatherFr(code) {
 
 function updateClock() {
   const now = new Date();
+
   const t = now.toLocaleTimeString("fr-FR", {
-    hour:"2-digit",
-    minute:"2-digit",
-    hour12:false,
-    timeZone:"Europe/Zurich"
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Europe/Zurich"
   });
+
   const clockEl = document.getElementById("clock");
-  if (clockEl) clockEl.textContent = t + " • Genève";
+  if (clockEl) {
+    clockEl.textContent = t + " • Genève";
+  }
 
   const parts = new Intl.DateTimeFormat("fr-FR", {
-    weekday:"long",
-    day:"numeric",
-    month:"long",
-    timeZone:"Europe/Zurich"
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    timeZone: "Europe/Zurich"
   })
     .formatToParts(now)
     .map(part =>
       (part.type === "weekday" || part.type === "month")
-        ? part.value.charAt(0).toUpperCase() + part.value.slice(1)
+        ? part.value.charAt(0).toUpperCase() +
+          part.value.slice(1)
         : part.value
     )
     .join("");
 
   const dateEl = document.getElementById("date");
-  if (dateEl) dateEl.textContent = parts;
+  if (dateEl) {
+    dateEl.textContent = parts;
+  }
 }
 
 async function updateWeather() {
@@ -170,15 +267,31 @@ async function updateWeather() {
     const response = await fetch(
       "https://api.open-meteo.com/v1/forecast?latitude=46.2044&longitude=6.1432&current=temperature_2m,weather_code,wind_speed_10m&timezone=Europe/Zurich"
     );
+
     const data = await response.json();
-    const condition = describeWeatherFr(data.current.weather_code);
-    const temp = Math.round(data.current.temperature_2m) + "°C";
-    const wind = Math.round(data.current.wind_speed_10m) + " km/h";
-    const tempEl = document.getElementById("temperature");
-    const weatherEl = document.getElementById("weather");
-    if (tempEl) tempEl.textContent = temp;
-    if (weatherEl) weatherEl.textContent =
-      condition ? `${condition} • ${wind}` : wind;
+    const condition =
+      describeWeatherFr(data.current.weather_code);
+    const temp =
+      Math.round(data.current.temperature_2m) + "°C";
+    const wind =
+      Math.round(data.current.wind_speed_10m) +
+      " km/h";
+
+    const tempEl =
+      document.getElementById("temperature");
+    const weatherEl =
+      document.getElementById("weather");
+
+    if (tempEl) {
+      tempEl.textContent = temp;
+    }
+
+    if (weatherEl) {
+      weatherEl.textContent =
+        condition
+          ? `${condition} • ${wind}`
+          : wind;
+    }
   } catch (e) {
     console.warn("Weather error:", e);
   }
@@ -194,15 +307,21 @@ setInterval(updateWeather, 600000);
 // Radio toggle
 //
 const radio = document.getElementById("radio");
-const radioToggle = document.getElementById("radio-toggle");
+const radioToggle =
+  document.getElementById("radio-toggle");
 
 if (radioToggle) {
   radioToggle.addEventListener("click", () => {
     if (!radio) return;
+
     if (radio.paused) {
       radio.play()
-        .then(() => radioToggle.classList.add("active"))
-        .catch(err => console.warn("Radio playback error:", err));
+        .then(() =>
+          radioToggle.classList.add("active")
+        )
+        .catch(err =>
+          console.warn("Radio playback error:", err)
+        );
     } else {
       radio.pause();
       radioToggle.classList.remove("active");
@@ -213,69 +332,146 @@ if (radioToggle) {
 //
 // Bottom news ticker
 //
-const ticker = document.getElementById("ticker");
+const ticker =
+  document.getElementById("ticker");
+
 let feedBatches = [];
 let rotationOffset = 0;
 let cachedForecastText = "";
 let currentAnimation = null;
+
 const NEWS_TICKER_DURATION_MULTIPLIER = 0.85;
 const MAX_NEWS_AGE_HOURS = 18;
 
 const leTempsFeeds = [
-  { name:"Le Temps Suisse", url:"https://www.letemps.ch/suisse.rss" },
-  { name:"Le Temps Articles", url:"https://www.letemps.ch/articles.rss" },
-  { name:"Le Temps Monde", url:"https://www.letemps.ch/monde.rss" },
-  { name:"Le Temps Économie", url:"https://www.letemps.ch/economie.rss" },
-  { name:"Le Temps Sport", url:"https://www.letemps.ch/sport.rss" }
+  {
+    name: "Le Temps Suisse",
+    url: "https://www.letemps.ch/suisse.rss"
+  },
+  {
+    name: "Le Temps Articles",
+    url: "https://www.letemps.ch/articles.rss"
+  },
+  {
+    name: "Le Temps Monde",
+    url: "https://www.letemps.ch/monde.rss"
+  },
+  {
+    name: "Le Temps Économie",
+    url: "https://www.letemps.ch/economie.rss"
+  },
+  {
+    name: "Le Temps Sport",
+    url: "https://www.letemps.ch/sport.rss"
+  }
 ];
 
 const twentyMinFeeds = [
-  { name:"20 Minutes Genève", url:"https://partner-feeds.20min.ch/rss/20minutes/suisse-romande/geneve" },
-  { name:"20 Minutes Suisse Romande", url:"https://partner-feeds.20min.ch/rss/20minutes/suisse-romande" },
-  { name:"20 Minutes Suisse", url:"https://partner-feeds.20min.ch/rss/20minutes/suisse" },
-  { name:"20 Minutes Principal", url:"https://partner-feeds.20min.ch/rss/20minutes" },
-  { name:"20 Minutes Monde", url:"https://partner-feeds.20min.ch/rss/20minutes/monde" },
-  { name:"20 Minutes Économie", url:"https://partner-feeds.20min.ch/rss/20minutes/economie" },
-  { name:"20 Minutes Sports", url:"https://partner-feeds.20min.ch/rss/20minutes/sports" }
+  {
+    name: "20 Minutes Genève",
+    url: "https://partner-feeds.20min.ch/rss/20minutes/suisse-romande/geneve"
+  },
+  {
+    name: "20 Minutes Suisse Romande",
+    url: "https://partner-feeds.20min.ch/rss/20minutes/suisse-romande"
+  },
+  {
+    name: "20 Minutes Suisse",
+    url: "https://partner-feeds.20min.ch/rss/20minutes/suisse"
+  },
+  {
+    name: "20 Minutes Principal",
+    url: "https://partner-feeds.20min.ch/rss/20minutes"
+  },
+  {
+    name: "20 Minutes Monde",
+    url: "https://partner-feeds.20min.ch/rss/20minutes/monde"
+  },
+  {
+    name: "20 Minutes Économie",
+    url: "https://partner-feeds.20min.ch/rss/20minutes/economie"
+  },
+  {
+    name: "20 Minutes Sports",
+    url: "https://partner-feeds.20min.ch/rss/20minutes/sports"
+  }
 ];
 
 function isRecentEnough(dateText) {
   if (!dateText) return true;
 
   const publishedMs = Date.parse(dateText);
-  if (!Number.isFinite(publishedMs)) return true;
+
+  if (!Number.isFinite(publishedMs)) {
+    return true;
+  }
 
   const ageHours =
-    (Date.now() - publishedMs) / (1000 * 60 * 60);
-  return ageHours <= MAX_NEWS_AGE_HOURS;
+    (Date.now() - publishedMs) /
+    (1000 * 60 * 60);
+
+  return ageHours <=
+    MAX_NEWS_AGE_HOURS;
 }
 
 async function fetchFeedXml(url) {
   try {
-    const response = await fetch(proxied(url));
-    if (!response.ok) return [];
+    const response =
+      await fetch(proxied(url));
 
-    const xmlText = await response.text();
+    if (!response.ok) {
+      return [];
+    }
+
+    const xmlText =
+      await response.text();
+
     const xmlDoc =
-      new DOMParser().parseFromString(xmlText, "text/xml");
-    if (xmlDoc.querySelector("parsererror")) return [];
+      new DOMParser().parseFromString(
+        xmlText,
+        "text/xml"
+      );
+
+    if (xmlDoc.querySelector("parsererror")) {
+      return [];
+    }
 
     const items =
-      [...xmlDoc.querySelectorAll("item, entry")];
+      [...xmlDoc.querySelectorAll(
+        "item, entry"
+      )];
 
     return items
       .map(item => {
         const title =
-          item.querySelector("title")?.textContent?.trim() || "";
+          item
+            .querySelector("title")
+            ?.textContent
+            ?.trim() || "";
+
         const published =
-          item.querySelector("pubDate")?.textContent?.trim() ||
-          item.querySelector("published")?.textContent?.trim() ||
-          item.querySelector("updated")?.textContent?.trim() ||
+          item
+            .querySelector("pubDate")
+            ?.textContent
+            ?.trim() ||
+          item
+            .querySelector("published")
+            ?.textContent
+            ?.trim() ||
+          item
+            .querySelector("updated")
+            ?.textContent
+            ?.trim() ||
           "";
-        return { title, published };
+
+        return {
+          title,
+          published
+        };
       })
       .filter(item =>
-        item.title && isRecentEnough(item.published)
+        item.title &&
+        isRecentEnough(item.published)
       )
       .map(item => item.title);
   } catch (e) {
@@ -289,20 +485,35 @@ async function fetchTpgAlerts() {
     const res = await fetch(
       "https://transport.opendata.ch/v1/stationboard?station=Geneve,Gare%20Cornavin&limit=5"
     );
+
     if (res.ok) {
-      const data = await res.json();
-      if (data && Array.isArray(data.stationboard)) {
-        const delayed = data.stationboard.filter(
-          item => item.stop && item.stop.delay > 0
-        );
-        if (delayed.length > 0) {
-          return delayed.slice(0, 2).map(item =>
-            `TPG / CFF : Genève-Cornavin - Ligne ${item.category}${item.number} vers ${item.to} — Retard de ${item.stop.delay} min`
+      const data =
+        await res.json();
+
+      if (
+        data &&
+        Array.isArray(
+          data.stationboard
+        )
+      ) {
+        const delayed =
+          data.stationboard.filter(
+            item =>
+              item.stop &&
+              item.stop.delay > 0
           );
+
+        if (delayed.length > 0) {
+          return delayed
+            .slice(0, 2)
+            .map(item =>
+              `TPG / CFF : Genève-Cornavin - Ligne ${item.category}${item.number} vers ${item.to} — Retard de ${item.stop.delay} min`
+            );
         }
       }
     }
   } catch (e) {}
+
   return [
     "TPG / CFF : Genève-Cornavin - Service régulier et fluide sur le réseau"
   ];
@@ -313,87 +524,164 @@ async function getForecast() {
     const response = await fetch(
       "https://api.open-meteo.com/v1/forecast?latitude=46.2044&longitude=6.1432&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=3&timezone=Europe/Zurich"
     );
-    const data = await response.json();
-    const d = data.daily;
-    const parts = d.time.map((day, i) => {
-      let label = "Aujourd'hui";
-      if (i === 1) label = "Demain";
-      else if (i > 1) {
-        const name = new Intl.DateTimeFormat("fr-CH", {
-          weekday:"long",
-          timeZone:"UTC"
-        }).format(new Date(day + "T12:00:00Z"));
-        label =
-          name.charAt(0).toUpperCase() + name.slice(1);
+
+    const data =
+      await response.json();
+
+    const d =
+      data.daily;
+
+    const parts = d.time.map(
+      (day, i) => {
+        let label =
+          "Aujourd'hui";
+
+        if (i === 1) {
+          label = "Demain";
+        } else if (i > 1) {
+          const name =
+            new Intl.DateTimeFormat(
+              "fr-CH",
+              {
+                weekday: "long",
+                timeZone: "UTC"
+              }
+            ).format(
+              new Date(
+                day +
+                "T12:00:00Z"
+              )
+            );
+
+          label =
+            name.charAt(0).toUpperCase() +
+            name.slice(1);
+        }
+
+        const desc =
+          describeWeatherFr(
+            d.weather_code[i]
+          );
+
+        return (
+          label +
+          " : " +
+          (
+            desc
+              ? desc + ", "
+              : ""
+          ) +
+          Math.round(
+            d.temperature_2m_min[i]
+          ) +
+          " à " +
+          Math.round(
+            d.temperature_2m_max[i]
+          ) +
+          " °C"
+        );
       }
-      const desc = describeWeatherFr(d.weather_code[i]);
-      return label +
-        " : " +
-        (desc ? desc + ", " : "") +
-        Math.round(d.temperature_2m_min[i]) +
-        " à " +
-        Math.round(d.temperature_2m_max[i]) +
-        " °C";
-    });
-    return "Prévisions pour Genève : " + parts.join("   |   ");
+    );
+
+    return (
+      "Prévisions pour Genève : " +
+      parts.join("   |   ")
+    );
   } catch (e) {
-    console.warn("Forecast fetch error:", e);
+    console.warn(
+      "Forecast fetch error:",
+      e
+    );
     return null;
   }
 }
 
 async function updateTicker() {
-  const forecastPromise = getForecast();
-  const tpgPromise = fetchTpgAlerts();
+  const forecastPromise =
+    getForecast();
+  const tpgPromise =
+    fetchTpgAlerts();
 
   const leTempsPromises =
-    leTempsFeeds.map(feed => fetchFeedXml(feed.url));
-  const twentyMinPromises =
-    twentyMinFeeds.map(feed => fetchFeedXml(feed.url));
+    leTempsFeeds.map(feed =>
+      fetchFeedXml(feed.url)
+    );
 
-  cachedForecastText = await forecastPromise;
-  const tpgResults = await tpgPromise;
+  const twentyMinPromises =
+    twentyMinFeeds.map(feed =>
+      fetchFeedXml(feed.url)
+    );
+
+  cachedForecastText =
+    await forecastPromise;
+
+  const tpgResults =
+    await tpgPromise;
+
   const leTempsResults =
-    await Promise.all(leTempsPromises);
+    await Promise.all(
+      leTempsPromises
+    );
+
   const twentyMinResults =
-    await Promise.all(twentyMinPromises);
+    await Promise.all(
+      twentyMinPromises
+    );
 
   feedBatches = [];
 
   feedBatches.push({
-    name:"Geneva Cam",
-    titles:[
+    name: "Geneva Cam",
+    titles: [
       "Bienvenue sur Geneva Cam 😃 Bonne écoute de Radio Lac, le meilleur de la musique 🎵",
       "Actualités en direct de Genève, de Suisse et du monde, ainsi que les dernières informations sur l'économie, le sport, la météo et les transports publics à Genève"
     ]
   });
 
-  if (tpgResults && tpgResults.length > 0) {
+  if (
+    tpgResults &&
+    tpgResults.length > 0
+  ) {
     feedBatches.push({
-      name:"Transports publics à Genève",
-      titles:tpgResults
+      name:
+        "Transports publics à Genève",
+      titles: tpgResults
     });
   }
 
-  leTempsResults.forEach((titles, idx) => {
-    const feed = leTempsFeeds[idx];
-    if (titles && titles.length > 0) {
-      feedBatches.push({
-        name:feed.name,
-        titles
-      });
-    }
-  });
+  leTempsResults.forEach(
+    (titles, idx) => {
+      const feed =
+        leTempsFeeds[idx];
 
-  twentyMinResults.forEach((titles, idx) => {
-    const feed = twentyMinFeeds[idx];
-    if (titles && titles.length > 0) {
-      feedBatches.push({
-        name:feed.name,
-        titles
-      });
+      if (
+        titles &&
+        titles.length > 0
+      ) {
+        feedBatches.push({
+          name: feed.name,
+          titles
+        });
+      }
     }
-  });
+  );
+
+  twentyMinResults.forEach(
+    (titles, idx) => {
+      const feed =
+        twentyMinFeeds[idx];
+
+      if (
+        titles &&
+        titles.length > 0
+      ) {
+        feedBatches.push({
+          name: feed.name,
+          titles
+        });
+      }
+    }
+  );
 
   renderNextRotationBatch();
 }
@@ -401,29 +689,63 @@ async function updateTicker() {
 function renderNextRotationBatch() {
   const headlines = [];
 
-  if (feedBatches.length > 0) {
-    const welcomeBatch = feedBatches[0];
-    const total = welcomeBatch.titles.length;
-    for (let i = 0; i < Math.min(2, total); i++) {
+  if (
+    feedBatches.length > 0
+  ) {
+    const welcomeBatch =
+      feedBatches[0];
+
+    const total =
+      welcomeBatch.titles.length;
+
+    for (
+      let i = 0;
+      i < Math.min(2, total);
+      i++
+    ) {
       const storyIndex =
-        (rotationOffset + i) % total;
+        (
+          rotationOffset +
+          i
+        ) % total;
+
       headlines.push(
         `${welcomeBatch.name}: ${welcomeBatch.titles[storyIndex]}`
       );
     }
   }
 
-  if (cachedForecastText) {
-    headlines.push(cachedForecastText);
+  if (
+    cachedForecastText
+  ) {
+    headlines.push(
+      cachedForecastText
+    );
   }
 
-  for (let b = 1; b < feedBatches.length; b++) {
-    const batch = feedBatches[b];
-    const total = batch.titles.length;
+  for (
+    let b = 1;
+    b < feedBatches.length;
+    b++
+  ) {
+    const batch =
+      feedBatches[b];
+
+    const total =
+      batch.titles.length;
+
     if (total > 0) {
-      for (let i = 0; i < Math.min(3, total); i++) {
+      for (
+        let i = 0;
+        i < Math.min(3, total);
+        i++
+      ) {
         const storyIndex =
-          (rotationOffset + i) % total;
+          (
+            rotationOffset +
+            i
+          ) % total;
+
         headlines.push(
           `${batch.name}: ${batch.titles[storyIndex]}`
         );
@@ -432,11 +754,24 @@ function renderNextRotationBatch() {
   }
 
   rotationOffset =
-    (rotationOffset + 3) % 10;
+    (
+      rotationOffset +
+      3
+    ) % 10;
 
-  if (headlines.length > 0) {
-    const joined = headlines.join("   •   ");
-    if (ticker) ticker.textContent = joined;
+  if (
+    headlines.length > 0
+  ) {
+    const joined =
+      headlines.join(
+        "   •   "
+      );
+
+    if (ticker) {
+      ticker.textContent =
+        joined;
+    }
+
     startTickerSeamless();
   } else if (ticker) {
     ticker.textContent =
@@ -447,12 +782,19 @@ function renderNextRotationBatch() {
 function startTickerSeamless() {
   if (!ticker) return;
 
-  if (currentAnimation) {
-    try { currentAnimation.cancel(); } catch (e) {}
+  if (
+    currentAnimation
+  ) {
+    try {
+      currentAnimation.cancel();
+    } catch (e) {}
+
     currentAnimation = null;
   }
 
-  const startPos = window.innerWidth;
+  const startPos =
+    window.innerWidth;
+
   ticker.style.transform =
     `translateX(${startPos}px)`;
 
@@ -463,28 +805,39 @@ function startTickerSeamless() {
     ).matches;
 
   if (reduced) {
-    setTimeout(renderNextRotationBatch, 10000);
+    setTimeout(
+      renderNextRotationBatch,
+      10000
+    );
     return;
   }
 
   requestAnimationFrame(() => {
-    const width = ticker.offsetWidth;
+    const width =
+      ticker.offsetWidth;
+
     const distance =
-      width + window.innerWidth;
+      width +
+      window.innerWidth;
+
     const isMobilePortrait =
       window.matchMedia(
         "(max-width: 768px) and (orientation: portrait)"
       ).matches;
+
     const isMobileLandscape =
       window.matchMedia(
         "(max-height: 500px) and (orientation: landscape)"
       ).matches;
+
     const base =
       isMobilePortrait
         ? distance * 14.25
         : isMobileLandscape
-          ? distance * 10.6666667
+          ? distance *
+            10.6666667
           : distance * 8.0;
+
     const duration =
       Math.max(
         4000,
@@ -494,70 +847,125 @@ function startTickerSeamless() {
         )
       );
 
-    currentAnimation = ticker.animate(
-      [
-        { transform:`translateX(${startPos}px)` },
-        { transform:`translateX(-${width}px)` }
-      ],
-      {
-        duration,
-        iterations:1,
-        easing:"linear"
-      }
-    );
+    currentAnimation =
+      ticker.animate(
+        [
+          {
+            transform:
+              `translateX(${startPos}px)`
+          },
+          {
+            transform:
+              `translateX(-${width}px)`
+          }
+        ],
+        {
+          duration,
+          iterations: 1,
+          easing: "linear"
+        }
+      );
 
     currentAnimation.onfinish =
-      () => renderNextRotationBatch();
+      () =>
+        renderNextRotationBatch();
   });
 }
 
 updateTicker();
-setInterval(updateTicker, 600000);
+setInterval(
+  updateTicker,
+  600000
+);
 
 //
 // Songs widget + tram ticker
 //
 const SONGS_URL =
   "https://www.radiolac.ch/cache/lac.json";
-const SONGS_REFRESH_MS = 30000;
-const GRANGE_CANAL_STOP_ID = "8592833";
+
+const SONGS_REFRESH_MS =
+  30000;
+
+const GRANGE_CANAL_STOP_ID =
+  "8592833";
+
 const TRAM_LOOKAHEAD_MS =
-  30 * 60 * 1000;
-const STATIONBOARD_LIMIT = 100;
+  30 *
+  60 *
+  1000;
+
+const STATIONBOARD_LIMIT =
+  100;
 
 function getZurichOffsetMinutes(date) {
   const parts =
-    new Intl.DateTimeFormat("en-US", {
-      timeZone:"Europe/Zurich",
-      timeZoneName:"shortOffset",
-      year:"numeric",
-      month:"2-digit",
-      day:"2-digit",
-      hour:"2-digit",
-      minute:"2-digit",
-      second:"2-digit",
-      hour12:false
-    }).formatToParts(date);
+    new Intl.DateTimeFormat(
+      "en-US",
+      {
+        timeZone:
+          "Europe/Zurich",
+        timeZoneName:
+          "shortOffset",
+        year:
+          "numeric",
+        month:
+          "2-digit",
+        day:
+          "2-digit",
+        hour:
+          "2-digit",
+        minute:
+          "2-digit",
+        second:
+          "2-digit",
+        hour12:
+          false
+      }
+    ).formatToParts(
+      date
+    );
 
   const tzName =
     parts.find(
-      p => p.type === "timeZoneName"
-    )?.value || "GMT+1";
+      p =>
+        p.type ===
+        "timeZoneName"
+    )?.value ||
+    "GMT+1";
 
   const match =
     tzName.match(
       /GMT([+-])(\d{1,2})(?::?(\d{2}))?/
     );
 
-  if (!match) return 60;
+  if (!match) {
+    return 60;
+  }
 
-  const sign = match[1] === "-" ? -1 : 1;
+  const sign =
+    match[1] === "-"
+      ? -1
+      : 1;
+
   const hours =
-    Number(match[2] || 0);
+    Number(
+      match[2] ||
+      0
+    );
+
   const minutes =
-    Number(match[3] || 0);
+    Number(
+      match[3] ||
+      0
+    );
+
   return sign *
-    (hours * 60 + minutes);
+    (
+      hours *
+      60 +
+      minutes
+    );
 }
 
 function parseZurichTimestamp(value) {
@@ -565,17 +973,28 @@ function parseZurichTimestamp(value) {
     value === null ||
     value === undefined ||
     value === ""
-  ) return NaN;
+  ) {
+    return NaN;
+  }
 
   const source =
     String(value).trim();
-  if (!source) return NaN;
+
+  if (!source) {
+    return NaN;
+  }
 
   if (
-    /[zZ]|[+-]\d{2}:?\d{2}$/.test(source)
+    /[zZ]|[+-]\d{2}:?\d{2}$/.test(
+      source
+    )
   ) {
-    const parsed = Date.parse(source);
-    return Number.isFinite(parsed)
+    const parsed =
+      Date.parse(source);
+
+    return Number.isFinite(
+      parsed
+    )
       ? parsed
       : NaN;
   }
@@ -586,8 +1005,12 @@ function parseZurichTimestamp(value) {
     );
 
   if (!match) {
-    const parsed = Date.parse(source);
-    return Number.isFinite(parsed)
+    const parsed =
+      Date.parse(source);
+
+    return Number.isFinite(
+      parsed
+    )
       ? parsed
       : NaN;
   }
@@ -599,7 +1022,8 @@ function parseZurichTimestamp(value) {
     d,
     hh,
     mm,
-    ss = "00"
+    ss =
+      "00"
   ] = match;
 
   const utcMs =
@@ -614,175 +1038,277 @@ function parseZurichTimestamp(value) {
 
   const offsetMinutes =
     getZurichOffsetMinutes(
-      new Date(utcMs)
+      new Date(
+        utcMs
+      )
     );
 
   return utcMs -
-    (offsetMinutes * 60 * 1000);
+    (
+      offsetMinutes *
+      60 *
+      1000
+    );
 }
 
 const DESKTOP_DEPARTURES_TICKER_SPEED =
-  92.0 * 1.15 * 1.5;
+  92.0 *
+  1.15 *
+  1.5;
+
 const MOBILE_DEPARTURES_TICKER_SPEED =
-  DESKTOP_DEPARTURES_TICKER_SPEED * 0.5;
+  DESKTOP_DEPARTURES_TICKER_SPEED *
+  0.5;
 
 (function createSongsWidget() {
   const logoBox =
-    document.getElementById("logoBox");
+    document.getElementById(
+      "logoBox"
+    );
+
   const clockBox =
-    document.getElementById("clockBox");
+    document.getElementById(
+      "clockBox"
+    );
 
   const box =
-    document.createElement("div");
-  box.id = "songs-widget";
-  box.hidden = true;
+    document.createElement(
+      "div"
+    );
+
+  box.id =
+    "songs-widget";
+  box.hidden =
+    true;
 
   const tramTicker =
-    document.createElement("div");
-  tramTicker.id = "tram-ticker";
+    document.createElement(
+      "div"
+    );
+
+  tramTicker.id =
+    "tram-ticker";
+
   tramTicker.setAttribute(
     "aria-label",
     "Départs des trams à Grange-Canal dans les 30 prochaines minutes"
   );
 
   const tramTrack =
-    document.createElement("span");
+    document.createElement(
+      "span"
+    );
+
   tramTrack.id =
     "tram-ticker-track";
-  tramTicker.appendChild(tramTrack);
 
-  let tramAnimation = null;
-  let tramAnimationProgress = 0;
-  let lastDepartureText = "";
+  tramTicker.appendChild(
+    tramTrack
+  );
 
-  const placeTramTicker = () => {
-    if (!clockBox) return;
-    if (
-      tramTicker.parentElement !==
-      clockBox
-    ) {
-      clockBox.appendChild(tramTicker);
-    }
-  };
+  let tramAnimation =
+    null;
 
-  const renderTramTicker = (text) => {
-    if (!text) return;
+  let tramAnimationProgress =
+    0;
 
-    if (
-      text === lastDepartureText &&
-      tramAnimation
-    ) return;
+  let lastDepartureText =
+    "";
 
-    if (tramAnimation) {
-      const duration =
-        tramAnimation.effect?.getTiming()?.duration;
-      const currentTime =
-        Number(
-          tramAnimation.currentTime
-        );
-
-      if (
-        typeof duration === "number" &&
-        duration > 0 &&
-        Number.isFinite(currentTime)
-      ) {
-        tramAnimationProgress =
-          (currentTime % duration) /
-          duration;
+  const placeTramTicker =
+    () => {
+      if (!clockBox) {
+        return;
       }
 
-      try {
-        tramAnimation.cancel();
-      } catch (e) {}
+      if (
+        tramTicker.parentElement !==
+        clockBox
+      ) {
+        clockBox.appendChild(
+          tramTicker
+        );
+      }
+    };
 
-      tramAnimation = null;
-    }
+  const renderTramTicker =
+    (text) => {
+      if (!text) {
+        return;
+      }
 
-    lastDepartureText = text;
+      if (
+        text ===
+        lastDepartureText &&
+        tramAnimation
+      ) {
+        return;
+      }
 
-    tramTrack.replaceChildren();
-    tramTrack.style.display =
-      "inline-flex";
+      if (
+        tramAnimation
+      ) {
+        const duration =
+          tramAnimation
+            .effect
+            ?.getTiming()
+            ?.duration;
 
-    for (let i = 0; i < 3; i++) {
-      const segment =
-        document.createElement("span");
-      segment.className =
-        "tram-ticker-segment";
-      segment.textContent =
-        `${text}   •   `;
-      tramTrack.appendChild(segment);
-    }
+        const currentTime =
+          Number(
+            tramAnimation.currentTime
+          );
 
-    placeTramTicker();
-
-    const reduced =
-      window.matchMedia &&
-      window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
-
-    if (reduced) {
-      tramTrack.style.transform =
-        "translateX(0)";
-      tramAnimationProgress = 0;
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      const firstSegment =
-        tramTrack.firstElementChild;
-      if (!firstSegment) return;
-
-      const cycleWidth =
-        firstSegment.getBoundingClientRect().width;
-      if (!cycleWidth) return;
-
-      const isMobilePortrait =
-        window.matchMedia(
-          "(max-width: 768px) and (orientation: portrait)"
-        ).matches;
-      const isMobileLandscape =
-        window.matchMedia(
-          "(max-height: 500px) and (orientation: landscape)"
-        ).matches;
-      const isMobile =
-        isMobilePortrait ||
-        isMobileLandscape;
-
-      const currentSpeed =
-        isMobile
-          ? MOBILE_DEPARTURES_TICKER_SPEED
-          : DESKTOP_DEPARTURES_TICKER_SPEED;
-
-      const duration =
-        Math.max(
-          5000,
-          Math.round(
-            (cycleWidth /
-              currentSpeed) *
-            1000
+        if (
+          typeof duration ===
+          "number" &&
+          duration > 0 &&
+          Number.isFinite(
+            currentTime
           )
-        );
+        ) {
+          tramAnimationProgress =
+            (
+              currentTime %
+              duration
+            ) /
+            duration;
+        }
 
-      tramAnimation =
-        tramTrack.animate(
-          [
-            { transform:"translateX(0px)" },
-            { transform:`translateX(-${cycleWidth}px)` }
-          ],
-          {
-            duration,
-            iterations:Infinity,
-            easing:"linear"
-          }
-        );
+        try {
+          tramAnimation.cancel();
+        } catch (e) {}
 
-      tramAnimation.currentTime =
-        tramAnimationProgress *
-        duration;
-    });
-  };
+        tramAnimation =
+          null;
+      }
+
+      lastDepartureText =
+        text;
+
+      tramTrack.replaceChildren();
+
+      tramTrack.style.display =
+        "inline-flex";
+
+      for (
+        let i = 0;
+        i < 3;
+        i++
+      ) {
+        const segment =
+          document.createElement(
+            "span"
+          );
+
+        segment.className =
+          "tram-ticker-segment";
+
+        segment.textContent =
+          `${text}   •   `;
+
+        tramTrack.appendChild(
+          segment
+        );
+      }
+
+      placeTramTicker();
+
+      const reduced =
+        window.matchMedia &&
+        window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+      if (
+        reduced
+      ) {
+        tramTrack.style.transform =
+          "translateX(0)";
+        tramAnimationProgress =
+          0;
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        const firstSegment =
+          tramTrack
+            .firstElementChild;
+
+        if (
+          !firstSegment
+        ) {
+          return;
+        }
+
+        const cycleWidth =
+          firstSegment
+            .getBoundingClientRect()
+            .width;
+
+        if (
+          !cycleWidth
+        ) {
+          return;
+        }
+
+        const isMobilePortrait =
+          window.matchMedia(
+            "(max-width: 768px) and (orientation: portrait)"
+          ).matches;
+
+        const isMobileLandscape =
+          window.matchMedia(
+            "(max-height: 500px) and (orientation: landscape)"
+          ).matches;
+
+        const isMobile =
+          isMobilePortrait ||
+          isMobileLandscape;
+
+        const currentSpeed =
+          isMobile
+            ? MOBILE_DEPARTURES_TICKER_SPEED
+            : DESKTOP_DEPARTURES_TICKER_SPEED;
+
+        const duration =
+          Math.max(
+            5000,
+            Math.round(
+              (
+                cycleWidth /
+                currentSpeed
+              ) *
+              1000
+            )
+          );
+
+        tramAnimation =
+          tramTrack.animate(
+            [
+              {
+                transform:
+                  "translateX(0px)"
+              },
+              {
+                transform:
+                  `translateX(-${cycleWidth}px)`
+              }
+            ],
+            {
+              duration,
+              iterations:
+                Infinity,
+              easing:
+                "linear"
+            }
+          );
+
+        tramAnimation.currentTime =
+          tramAnimationProgress *
+          duration;
+      });
+    };
 
   async function refreshTramDepartures() {
     try {
@@ -791,29 +1317,42 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
         `?id=${GRANGE_CANAL_STOP_ID}&limit=${STATIONBOARD_LIMIT}`;
 
       const response =
-        await fetch(url);
-      if (!response.ok) {
+        await fetch(
+          url
+        );
+
+      if (
+        !response.ok
+      ) {
         throw new Error(
-          "HTTP " + response.status
+          "HTTP " +
+          response.status
         );
       }
 
       const data =
         await response.json();
+
       const now =
         Date.now();
 
       const tramEntries =
-        (data.stationboard || [])
+        (
+          data.stationboard ||
+          []
+        )
           .map(item => {
             const stop =
-              item.stop || {};
+              item.stop ||
+              {};
+
             const departure =
               (
                 stop.prognosis &&
                 stop.prognosis.departure
               ) ||
               stop.departure;
+
             const timestamp =
               parseZurichTimestamp(
                 departure
@@ -824,7 +1363,9 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
               stop,
               departure,
               timestamp:
-                Number.isFinite(timestamp)
+                Number.isFinite(
+                  timestamp
+                )
                   ? timestamp
                   : NaN
             };
@@ -832,17 +1373,23 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
           .filter(row => {
             const isTram =
               String(
-                row.item &&
-                row.item.category ||
+                (
+                  row.item &&
+                  row.item.category
+                ) ||
                 ""
               )
-                .toUpperCase() === "T";
+                .toUpperCase() ===
+              "T";
 
-            return isTram &&
+            return (
+              isTram &&
               Number.isFinite(
                 row.timestamp
               ) &&
-              row.timestamp >= now;
+              row.timestamp >=
+              now
+            );
           })
           .sort(
             (a, b) =>
@@ -852,6 +1399,7 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
 
       let startWindow =
         now;
+
       let endWindow =
         now +
         TRAM_LOOKAHEAD_MS;
@@ -866,10 +1414,13 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
       if (
         inNext30Minutes.length ===
         0 &&
-        tramEntries.length > 0
+        tramEntries.length >
+        0
       ) {
         startWindow =
-          tramEntries[0].timestamp;
+          tramEntries[0]
+            .timestamp;
+
         endWindow =
           startWindow +
           TRAM_LOOKAHEAD_MS;
@@ -884,7 +1435,9 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
             endWindow
         );
 
-      if (!matches.length) {
+      if (
+        !matches.length
+      ) {
         renderTramTicker(
           "Grange-Canal, prochains départs : aucun tram prévu"
         );
@@ -895,35 +1448,54 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
         new Intl.DateTimeFormat(
           "fr-CH",
           {
-            hour:"2-digit",
-            minute:"2-digit",
-            timeZone:"Europe/Zurich"
+            hour:
+              "2-digit",
+            minute:
+              "2-digit",
+            timeZone:
+              "Europe/Zurich"
           }
         );
 
       const departures =
-        matches.map(row => {
-          const line =
-            "T" +
-            (row.item.number || "");
-          const delay =
-            Number(row.stop.delay) > 0
-              ? " +" +
-                row.stop.delay +
-                " min"
-              : "";
-          return `${line} → ${row.item.to || "destination inconnue"} ${formatter.format(new Date(row.timestamp))}${delay}`;
-        });
+        matches.map(
+          row => {
+            const line =
+              "T" +
+              (
+                row.item
+                  .number ||
+                ""
+              );
+
+            const delay =
+              Number(
+                row.stop.delay
+              ) > 0
+                ? " +" +
+                  row.stop
+                    .delay +
+                  " min"
+                : "";
+
+            return (
+              `${line} → ${row.item.to || "destination inconnue"} ${formatter.format(new Date(row.timestamp))}${delay}`
+            );
+          }
+        );
 
       renderTramTicker(
         "Grange-Canal, prochains départs : " +
-        departures.join("   •   ")
+        departures.join(
+          "   •   "
+        )
       );
     } catch (error) {
       console.warn(
         "Tram departures error:",
         error
       );
+
       renderTramTicker(
         "Grange-Canal, prochains départs : indisponible"
       );
@@ -934,24 +1506,42 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
     "resize",
     () => {
       placeTramTicker();
+
       renderTramTicker(
         lastDepartureText ||
         "Grange-Canal, prochains départs : "
       );
+
+      if (
+        window.placeSandrineBox
+      ) {
+        window.placeSandrineBox();
+      }
     },
-    { passive:true }
+    {
+      passive:
+        true
+    }
   );
 
-  if (logoBox) {
+  if (
+    logoBox
+  ) {
     const main =
-      document.createElement("div");
-    main.id = "logoMain";
+      document.createElement(
+        "div"
+      );
+
+    main.id =
+      "logoMain";
 
     while (
-      logoBox.firstChild
+      logoBox
+        .firstChild
     ) {
       main.appendChild(
-        logoBox.firstChild
+        logoBox
+          .firstChild
       );
     }
 
@@ -966,34 +1556,63 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
   }
 
   const el =
-    (tag, cls, text) => {
+    (
+      tag,
+      cls,
+      text
+    ) => {
       const n =
         document.createElement(
           tag
         );
-      if (cls) n.className =
-        cls;
-      if (text !== undefined) {
+
+      if (
+        cls
+      ) {
+        n.className =
+          cls;
+      }
+
+      if (
+        text !==
+        undefined
+      ) {
         n.textContent =
           text;
       }
+
       return n;
     };
 
   const makeRow =
-    (label, song, isNow) => {
+    (
+      label,
+      song,
+      isNow
+    ) => {
       const row =
         el(
           "div",
           "sw-row" +
-          (isNow ? " now" : "")
+          (
+            isNow
+              ? " now"
+              : ""
+          )
         );
 
       const img =
-        el("img");
-      img.alt = "";
+        el(
+          "img"
+        );
+
+      img.alt =
+        "";
+
       img.src =
-        song.imagexs || "";
+        song.imagexs ||
+        "";
+
       img.onerror =
         () => {
           img.style.visibility =
@@ -1001,7 +1620,10 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
         };
 
       const text =
-        el("div", "sw-text");
+        el(
+          "div",
+          "sw-text"
+        );
 
       const time =
         song.simpletime
@@ -1034,19 +1656,25 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
         img,
         text
       );
+
       return row;
     };
 
-  let lastKey = "";
+  let lastKey =
+    "";
 
   async function refreshSongs() {
     try {
       const res =
         await fetch(
-          proxied(SONGS_URL)
+          proxied(
+            SONGS_URL
+          )
         );
 
-      if (!res.ok) {
+      if (
+        !res.ok
+      ) {
         throw new Error(
           "HTTP " +
           res.status
@@ -1066,15 +1694,22 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
         ).matches;
 
       const prevCount =
-        isPortrait ? 2 : 2;
-      const prev =
-        (json.played || [])
-          .slice(
-            0,
-            prevCount
-          );
+        isPortrait
+          ? 2
+          : 2;
 
-      if (!now) {
+      const prev =
+        (
+          json.played ||
+          []
+        ).slice(
+          0,
+          prevCount
+        );
+
+      if (
+        !now
+      ) {
         throw new Error(
           "No live entry"
         );
@@ -1085,20 +1720,34 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
       );
 
       const key =
-        [now, ...prev]
+        [
+          now,
+          ...prev
+        ]
           .map(
             s =>
               s.playtime ||
               s.title
           )
-          .join("|");
+          .join(
+            "|"
+          );
 
       if (
         key ===
         lastKey
-      ) return;
+      ) {
+        if (
+          window.placeSandrineBox
+        ) {
+          window.placeSandrineBox();
+        }
 
-      lastKey = key;
+        return;
+      }
+
+      lastKey =
+        key;
 
       const children =
         [
@@ -1120,7 +1769,8 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
       ) {
         for (
           let i = 0;
-          i < prev.length;
+          i <
+          prev.length;
           i++
         ) {
           const label =
@@ -1142,34 +1792,58 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
         document.createElement(
           "div"
         );
+
       list.className =
         "sw-list";
 
       children.forEach(
-        c =>
+        child =>
           list.appendChild(
-            c
+            child
           )
       );
 
       box.replaceChildren(
         list
       );
-      box.hidden = false;
 
-      if (logoBox) {
+      box.hidden =
+        false;
+
+      if (
+        logoBox
+      ) {
         logoBox.classList.add(
           "has-songs"
         );
       }
 
       placeTramTicker();
+
+      if (
+        window.placeSandrineBox
+      ) {
+        window.placeSandrineBox();
+      }
+
+      requestAnimationFrame(
+        () => {
+          if (
+            window.placeSandrineBox
+          ) {
+            window.placeSandrineBox();
+          }
+        }
+      );
     } catch (e) {
       console.warn(
         "Songs error:",
         e
       );
-      if (!box.hidden) {
+
+      if (
+        !box.hidden
+      ) {
         box.classList.add(
           "stale"
         );
@@ -1178,12 +1852,14 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
   }
 
   refreshSongs();
+
   setInterval(
     refreshSongs,
     SONGS_REFRESH_MS
   );
 
   refreshTramDepartures();
+
   setInterval(
     refreshTramDepartures,
     SONGS_REFRESH_MS
@@ -1192,7 +1868,9 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
   document.addEventListener(
     "visibilitychange",
     () => {
-      if (!document.hidden) {
+      if (
+        !document.hidden
+      ) {
         refreshSongs();
         refreshTramDepartures();
       }
@@ -1203,12 +1881,19 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
     "DOMContentLoaded",
     () => {
       placeTramTicker();
+
       if (
         lastDepartureText
       ) {
         renderTramTicker(
           lastDepartureText
         );
+      }
+
+      if (
+        window.placeSandrineBox
+      ) {
+        window.placeSandrineBox();
       }
     }
   );
@@ -1222,7 +1907,12 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
     document.getElementById(
       "overlay-toggle"
     );
-  if (!button) return;
+
+  if (
+    !button
+  ) {
+    return;
+  }
 
   button.addEventListener(
     "click",
@@ -1239,7 +1929,9 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
 
       button.setAttribute(
         "aria-expanded",
-        String(!hidden)
+        String(
+          !hidden
+        )
       );
 
       button.setAttribute(
