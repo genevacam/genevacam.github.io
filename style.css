@@ -213,9 +213,8 @@ button,input,select,textarea{
 }
 
 /* Desktop message box */
+/* Sandrine card */
 #sandrine-box{
-  position:fixed;
-  z-index:10004;
   background:#48bcc7;
   color:#fff;
   border-radius:8px;
@@ -229,6 +228,7 @@ button,input,select,textarea{
   font-weight:700;
   line-height:1.35;
   white-space:normal;
+  z-index:10004;
 }
 
 /* Clock box */
@@ -760,17 +760,8 @@ body.boxes-hidden #overlay-toggle{
     transform:translateY(-0.9em);
   }
 
-  #sandrine-box{
-    left:var(--left-gap);
-    top:calc(var(--panel-top) + var(--panel-height) + 14px);
-    width:calc(
-      240px +
-      14px +
-      max(
-        160px,
-        calc(100vw - var(--clock-width) - 110px)
-      )
-    );
-    height:var(--message-height-desktop);
-  }
+#sandrine-box{
+  flex:0 0 360px;
+  height:100%;
+  font-size:32px;
 }
