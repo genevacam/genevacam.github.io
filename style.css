@@ -213,14 +213,9 @@ button,input,select,textarea{
 }
 
 /* Desktop message box */
-/* Sandrine card */
 #sandrine-box{
-  flex:0 0 300px;
-  height:100%;
-  position:relative;
-  left:auto;
-  top:auto;
-  width:auto;
+  position:fixed;
+  z-index:10004;
   background:#48bcc7;
   color:#fff;
   border-radius:8px;
@@ -229,9 +224,11 @@ button,input,select,textarea{
   align-items:center;
   justify-content:center;
   text-align:center;
-  font-size:32px;
+  font-family:'Inter',sans-serif;
+  font-size:36px;
   font-weight:700;
   line-height:1.35;
+  white-space:normal;
 }
 
 /* Clock box */
@@ -415,22 +412,14 @@ body.boxes-hidden #overlay-toggle{
 
 /* Portrait mobile */
 @media screen and (max-width:768px) and (orientation:portrait){
-  #sandrine-box{
-    top:calc(
-      var(--panel-top-mobile) +
-      var(--clock-mobile-height) +
-      var(--gap-mobile) +
-      var(--radio-mobile-height) +
-      var(--gap-mobile) +
-      var(--songs-mobile-height) +
-      var(--gap-mobile)
-    );
-    left:0;
-    height:var(--mobile-message-height);
-    padding:8px;
-    font-size:14px;
+  :root{
+    --panel-top-mobile:6px;
+    --clock-mobile-height:160px;
+    --radio-mobile-height:140px;
+    --songs-mobile-height:92px;
+    --ticker-height:50px;
+    --tram-ticker-height:30px;
   }
-}
 
   #clockBox,
   #logoBox,
@@ -623,40 +612,28 @@ body.boxes-hidden #overlay-toggle{
     align-self:stretch;
   }
 
-#logoMain{
-  flex:0 0 100px;
-  padding:10px;
-}
+  #logoMain{
+    flex:0 0 110px;
+    padding:10px;
+  }
 
-#songs-widget{
-  flex:0 0 160px;
-  min-width:160px;
-  max-width:160px;
-  padding:8px;
-}
+  #songs-widget{
+    padding:8px;
+    min-width:120px;
+    max-width:27.2vw;
+  }
 
-#sandrine-box{
-  position:relative;
-  left:auto;
-  top:auto;
-  width:auto;
-  height:100%;
-  flex:0 0 120px;
-  padding:8px;
-  font-size:16px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-}
+  #sandrine-box{
+    display:none;
+  }
 
-#clockBox{
-  top:var(--panel-top-mobile-land);
-  right:6px;
-  height:var(--panel-height-land);
-  width:200px;
-  padding:8px 8px calc(8px + var(--tram-ticker-height) + 6px);
-}
+  #clockBox{
+    top:var(--panel-top-mobile-land);
+    right:6px;
+    height:var(--panel-height-land);
+    width:220px;
+    padding:8px 8px calc(8px + var(--tram-ticker-height) + 6px);
+  }
 
   #fullscreen-btn{
     top:32px;
@@ -778,37 +755,22 @@ body.boxes-hidden #overlay-toggle{
 
 /* Desktop */
 @media screen and (min-width:1280px) and (min-height:501px){
-
-  #logoBox{
-    display:flex;
-    flex-direction:row;
-    align-items:stretch;
-    gap:14px;
-  }
-
-  #logoMain{
-    flex:0 0 240px;
-  }
-
-  #songs-widget{
-    flex:0 0 340px;
-    max-width:340px;
-  }
-
   #radio-tagline{
     font-size:clamp(14.4px,1.56vw,19.2px);
     transform:translateY(-0.9em);
   }
 
   #sandrine-box{
-    flex:0 0 360px;
-    height:100%;
-    font-size:32px;
-
-    position:relative;
-    left:auto;
-    top:auto;
-    width:auto;
+    left:var(--left-gap);
+    top:calc(var(--panel-top) + var(--panel-height) + 14px);
+    width:calc(
+      240px +
+      14px +
+      max(
+        160px,
+        calc(100vw - var(--clock-width) - 110px)
+      )
+    );
+    height:var(--message-height-desktop);
   }
-
 }

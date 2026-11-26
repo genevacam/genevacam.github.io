@@ -68,7 +68,6 @@ function isFullscreen() {
 })();
 
 //
-// //
 // Sandrine message box
 //
 (function setupSandrineBox() {
@@ -78,20 +77,22 @@ function isFullscreen() {
   box.textContent =
     "Salut Sandrine, bon courage ! J’ai hâte de te revoir. Gros Bisous 😘";
 
-  const logoBox = document.getElementById("logoBox");
-
-  if (logoBox) {
-    logoBox.appendChild(box);
-  } else {
-    document.body.appendChild(box);
-  }
+  document.body.appendChild(box);
 
   window.placeSandrineBox = function () {
+    const songs = document.getElementById("songs-widget");
+    if (!songs) return;
+
     const portraitMobile = window.matchMedia(
       "(max-width: 768px) and (orientation: portrait)"
     ).matches;
 
     if (portraitMobile) {
+      box.style.removeProperty("left");
+      box.style.removeProperty("top");
+      box.style.removeProperty("width");
+      box.style.removeProperty("height");
+      box.style.removeProperty("font-size");
       box.style.removeProperty("display");
       return;
     }
@@ -105,7 +106,15 @@ function isFullscreen() {
       return;
     }
 
+    const rect = songs.getBoundingClientRect();
+    if (!rect.width || songs.hidden) return;
+
     box.style.display = "flex";
+    box.style.left = `${rect.left}px`;
+    box.style.top = `${rect.bottom + 14}px`;
+    box.style.width = `${rect.width}px`;
+    box.style.height = "82px";
+    box.style.fontSize = "36px";
   };
 
   window.addEventListener("resize", window.placeSandrineBox);
