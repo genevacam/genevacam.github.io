@@ -626,7 +626,7 @@ body.boxes-hidden #overlay-toggle{
   #sandrine-box{
     min-width:0;
     padding:8px;
-    font-size:clamp(10px,2.5vh,14px);
+    font-size:clamp(20px,5vh,28px);
     line-height:1.2;
   }
 
@@ -777,4 +777,5 @@ body.boxes-hidden #overlay-toggle{
     height:var(--message-height-desktop);
   }
 }
+
 
