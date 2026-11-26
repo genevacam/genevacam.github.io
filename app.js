@@ -1,5 +1,6 @@
 // GenevaCam app.js
 // Sandrine message box added
+// Added “Gros Bisous 😘”
 
 console.log("GenevaCam loaded");
 
@@ -56,7 +57,7 @@ function isFullscreen() {
   box.id = "sandrine-box";
   box.setAttribute("role", "note");
   box.textContent =
-    "Salut Sandrine, bon courage ! J’ai hâte de te revoir.";
+    "Salut Sandrine, bon courage ! J’ai hâte de te revoir. Gros Bisous 😘";
   document.body.appendChild(box);
 })();
 
