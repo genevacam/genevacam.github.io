@@ -101,20 +101,31 @@ function isFullscreen() {
       "(max-height: 500px) and (orientation: landscape)"
     ).matches;
 
-    if (smallLandscape) {
-      box.style.display = "none";
-      return;
-    }
-
     const rect = songs.getBoundingClientRect();
     if (!rect.width || songs.hidden) return;
 
     box.style.display = "flex";
-    box.style.left = `${rect.left}px`;
-    box.style.top = `${rect.bottom + 14}px`;
+    box.style.top = `${rect.top}px`;
+    box.style.height = `${rect.height}px`;
+
+    if (smallLandscape) {
+      const clock = document.getElementById("clockBox");
+      if (!clock) return;
+
+      const clockRect = clock.getBoundingClientRect();
+      const left = rect.right + 10;
+      const availableWidth = Math.max(0, clockRect.left - left - 10);
+
+      box.style.left = `${left}px`;
+      box.style.width = `${availableWidth}px`;
+      box.style.fontSize = "";
+      return;
+    }
+
+    // Place the message as the third card in the same top row.
+    box.style.left = `${rect.right + 14}px`;
     box.style.width = `${rect.width}px`;
-    box.style.height = "82px";
-    box.style.fontSize = "36px";
+    box.style.fontSize = "";
   };
 
   window.addEventListener("resize", window.placeSandrineBox);
@@ -1943,3 +1954,4 @@ const MOBILE_DEPARTURES_TICKER_SPEED =
     }
   );
 })();
+

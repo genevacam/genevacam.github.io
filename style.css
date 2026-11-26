@@ -624,7 +624,10 @@ body.boxes-hidden #overlay-toggle{
   }
 
   #sandrine-box{
-    display:none;
+    min-width:0;
+    padding:8px;
+    font-size:clamp(10px,2.5vh,14px);
+    line-height:1.2;
   }
 
   #clockBox{
@@ -774,3 +777,4 @@ body.boxes-hidden #overlay-toggle{
     height:var(--message-height-desktop);
   }
 }
+
